@@ -26,6 +26,18 @@ body {
 .navbar p {
     font-size: 10px;
 }
+.team-logos {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 0;
+    background-color: #fff;
+}
+.team-logos img {
+    height: 30px;
+    margin: 0 10px;
+}
+
 
 .jumbotron {
     background-color: #343a40;
