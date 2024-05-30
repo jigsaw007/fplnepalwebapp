@@ -1,0 +1,29 @@
+name: Deploy to PythonAnywhere
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up SSH
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.PYTHONANYWHERE_SSH_KEY }}
+
+      - name: Deploy to PythonAnywhere
+        run: |
+          ssh fplnepal@ssh.pythonanywhere.com <<EOF
+          cd /home/fplnepal/webapp
+          git pull origin main
+          source venv/bin/activate
+          pip install -r requirements.txt
+          touch /var/www/fplnepal_pythonanywhere_com_wsgi.py
+          EOF
