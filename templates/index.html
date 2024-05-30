@@ -723,21 +723,7 @@ $(document).ready(function() {
         window.location.href = '/compare';
     });
 });
-function loadTeamLogos() {
-            $.get('/api/teams', function(data) {
-                const teams = data.teams;
-                const teamLogosContainer = $('#team-logos');
-                teams.forEach(team => {
-                    const logoUrl = `https://resources.premierleague.com/premierleague/badges/t${team.code}.png`;
-                    const logoImg = `<img src="${logoUrl}" alt="${team.name} logo" title="${team.name}">`;
-                    teamLogosContainer.append(logoImg);
-                });
-            });
-        }
 
-        $(document).ready(function() {
-            loadTeamLogos();
-        });
 
 
     </script>
