@@ -40,4 +40,4 @@ jobs:
 
       - name: Restart PythonAnywhere web app
         run: |
-          ssh fplnepal@ssh.pythonanywhere.com "pa_reload_web_app fplnepal"
+          ssh fplnepal@ssh.pythonanywhere.com "touch /var/www/fplnepal_pythonanywhere_com_wsgi.py"
