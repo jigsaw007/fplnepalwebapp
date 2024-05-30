@@ -18,9 +18,14 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.PYTHONANYWHERE_SSH_KEY }}
 
+      - name: Add PythonAnywhere to known hosts
+        run: |
+          mkdir -p ~/.ssh
+          echo "ssh.pythonanywhere.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDZbe5mge56A/sQA06BQJFMtpjGJySAfwf0WSbsW6ttp1ezwcNgFd++7T/5iCpa7tGFWYhN0mHHU2VArUdo5wptgmS5ZiaHZwDrrTSwJLnac+L2uusZGhtYwIutm6af1ADkMkBKCkFLzwymzj+RsMJKivrec3tqoaT95+fz30aJnn9C84FhK134W/Ha+tc1tiL5CO52swZMfjoU+8C1H1OrdjVzMaeY/L9R6rmh5NEoGNdMLnT7HE+/Hhd7Ds+El7b9bsdDmsfl/Z6BYmnO+o4DBxdZOOYGAjjHWW38vP+ZVcq3WfStZkA7kOMoZ2dgTVJWL9LPIaYg9VsqQ76YijWH" >> ~/.ssh/known_hosts
+
       - name: Deploy to PythonAnywhere
         run: |
-          ssh -o StrictHostKeyChecking=no fplnepal@ssh.pythonanywhere.com <<EOF
+          ssh fplnepal@ssh.pythonanywhere.com <<EOF
           cd /home/fplnepal/webapp
           git pull origin main
           source venv/bin/activate
