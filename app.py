@@ -9,11 +9,11 @@ import io
 
 app = Flask(__name__)
 
-@app.before_request
-def before_request():
-    if request.url.startswith('http://'):
-        url = request.url.replace('http://', 'https://', 1)
-        return redirect(url, code=301)
+# @app.before_request
+# def before_request():
+#     if request.url.startswith('http://'):
+#         url = request.url.replace('http://', 'https://', 1)
+#         return redirect(url, code=301)
 
 # API Endpoints
 BASE_URL = "https://fantasy.premierleague.com/api/"
@@ -194,6 +194,54 @@ def get_weekly_squad():
     except requests.exceptions.RequestException as e:
         logging.error(f"Error fetching weekly squad: {e}")
         return jsonify({"error": "Failed to fetch weekly squad"}), 500
+
+
+@app.route('/classic-league')
+def classic_league_page():
+    return render_template('classic-league.html')
+# Helper function to fetch all pages of data
+def fetch_all_pages(url_template, key):
+    page = 1
+    all_data = []
+    while True:
+        url = url_template.format(page=page)
+        response = requests.get(url)
+        if response.status_code != 200:
+            break
+        data = response.json()
+        results = data['standings'][key]
+        if not results:
+            break
+        all_data.extend(results)
+        page += 1
+    return all_data
+
+
+@app.route('/api/classic-standings-full', methods=['GET'])
+def get_classic_standings_full():
+    try:
+        url_template = "https://fantasy.premierleague.com/api/leagues-classic/604351/standings/?page_new_entries=1&page_standings={page}&phase=1"
+        standings = fetch_all_pages(url_template, 'results')
+        classic_standings = [
+            {"rank": entry['rank'], "entry_name": entry['entry_name'], "player_name": entry['player_name'], "total": entry['total']}
+            for entry in standings
+        ]
+        return jsonify(classic_standings)
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/ultimate-standings-full', methods=['GET'])
+def get_ultimate_standings_full():
+    try:
+        url_template = "https://fantasy.premierleague.com/api/leagues-classic/345282/standings/?page_new_entries=1&page_standings={page}&phase=1"
+        standings = fetch_all_pages(url_template, 'results')
+        ultimate_standings = [
+            {"rank": entry['rank'], "entry_name": entry['entry_name'], "player_name": entry['player_name'], "total": entry['total']}
+            for entry in standings
+        ]
+        return jsonify(ultimate_standings)
+    except requests.exceptions.RequestException as e:
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route('/compare')
