@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Compare Players</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <style>
+        .compare-container {
+            margin-top: 20px;
+        }
+        .player-select {
+            margin-bottom: 20px;
+        }
+        .comparison-header {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+        }
+        .comparison-header div {
+            flex: 1;
+            text-align: center;
+        }
+        .player-photo {
+            width: 150px;
+            height: auto;
+        }
+        .stats-table {
+            margin-top: 20px;
+            width: 100%;
+        }
+        .stats-table table {
+            width: 100%;
+            table-layout: fixed;
+        }
+        .stats-table th, .stats-table td {
+            text-align: center;
+            vertical-align: middle;
+        }
+        .better-stat {
+            color: gold;
+            font-weight: bold;
+        }
+        .search-box {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg">
+        <a class="navbar-brand" href="#">FPL NEPAL WEB APP</a>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="/players">Players</a></li>
+                <li class="nav-item"><a class="nav-link" href="/league">League</a></li>
+                <li class="nav-item"><a class="nav-link" href="/compare">Compare</a></li>
+                <!-- <li class="nav-item"><a class="nav-link active" href="/fixtures">Fixtures</a></li> -->
+                <li class="nav-item"><a class="nav-link active" href="/whatif">What If</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/squad">Squad</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container compare-container">
+        <h1 class="text-center">Compare Players</h1>
+        <div class="row">
+            <div class="col-md-6 player-select">
+                <input type="text" id="player1-search" class="form-control search-box" placeholder="Enter Player Name 1 (You can enter first 2-3 letters&select from dropdown)">
+                <select id="player1-select" class="form-control">
+                    <option value="">Select a player</option>
+                    {% for player in players %}
+                        <option value="{{ player.id }}">{{ player.first_name }} {{ player.second_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6 player-select">
+                <input type="text" id="player2-search" class="form-control search-box" placeholder="Enter Player Name 2 (You can enter first 2-3 letters&select from dropdown)">
+                <select id="player2-select" class="form-control">
+                    <option value="">Select a player</option>
+                    {% for player in players %}
+                        <option value="{{ player.id }}">{{ player.first_name }} {{ player.second_name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="stats-table">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th id="player1-header">Player 1</th>
+                        <th id="player2-header">Player 2</th>
+                    </tr>
+                </thead>
+                <tbody id="comparison-table-body">
+                    <!-- Comparison data will be populated here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>
+
+    <script>
+        let playerStats = {};
+
+        $(document).ready(function() {
+            // Function to filter player options based on search input
+            function filterPlayerOptions(searchBox, playerSelect) {
+                const searchValue = $(searchBox).val().toLowerCase();
+                $(playerSelect).find('option').each(function() {
+                    const optionText = $(this).text().toLowerCase();
+                    $(this).toggle(optionText.includes(searchValue));
+                });
+            }
+
+            $('#player1-search').on('input', function() {
+                filterPlayerOptions(this, '#player1-select');
+            });
+
+            $('#player2-search').on('input', function() {
+                filterPlayerOptions(this, '#player2-select');
+            });
+
+            // Function to fetch player stats
+            function fetchPlayerStats(playerId, playerNumber) {
+                if (!playerId) return;
+
+                $.get(`/api/player/${playerId}`, function(data) {
+                    playerStats[playerNumber] = data;
+                    updatePlayerPhoto(playerNumber, data.photo);
+                    updatePlayerHeader(playerNumber, data.web_name);
+                    updateComparisonTable();
+                });
+            }
+
+            // Function to update player photo
+            function updatePlayerPhoto(playerNumber, photo) {
+                // Remove any leading p's and the extension
+                const cleanedPhoto = photo.replace(/^p+/, '').split('.')[0];
+                const photoUrl = `https://resources.premierleague.com/premierleague/photos/players/110x140/p${cleanedPhoto}.png`;
+                const photoElement = `<img src="${photoUrl}" class="player-photo">`;
+                $(`#player${playerNumber}-header`).html(photoElement);
+            }
+
+            // Function to update player header with web name
+            function updatePlayerHeader(playerNumber, webName) {
+                const headerElement = $(`#player${playerNumber}-header`);
+                headerElement.html(headerElement.html() + `<br>${webName}`);
+            }
+
+            // Function to update the comparison table
+            function updateComparisonTable() {
+                $('#comparison-table-body').empty();
+
+                const stats = [
+                    'Current Price', 'Total Points', 'Goals', 'Assists', 'Clean Sheets', 'Goals Conceded',
+                    'Own Goals', 'Penalties Saved', 'Penalties Missed', 'Yellow Cards', 'Red Cards',
+                    'Saves', 'Bonus', 'Starts', 'Selected by percent', 'Points per game'
+                ];
+
+                const statKeys = {
+                    'Current Price': 'now_cost',
+                    'Total Points': 'total_points',
+                    'Goals': 'goals_scored',
+                    'Assists': 'assists',
+                    'Clean Sheets': 'clean_sheets',
+                    'Goals Conceded': 'goals_conceded',
+                    'Own Goals': 'own_goals',
+                    'Penalties Saved': 'penalties_saved',
+                    'Penalties Missed': 'penalties_missed',
+                    'Yellow Cards': 'yellow_cards',
+                    'Red Cards': 'red_cards',
+                    'Saves': 'saves',
+                    'Bonus': 'bonus',
+                    'Starts': 'starts',
+                    'Selected by percent': 'selected_by_percent',
+                    'Points per game': 'points_per_game'
+                };
+
+                stats.forEach(function(stat) {
+                    const statKey = statKeys[stat];
+                    const row = $(`<tr class="${statKey}"><td>${stat}</td></tr>`);
+                    $('#comparison-table-body').append(row);
+
+                    [1, 2].forEach(function(playerNumber) {
+                        let value = playerStats[playerNumber] ? playerStats[playerNumber][statKey] : '-';
+                        if (statKey === 'now_cost' && value !== '-') {
+                            value = (value / 10).toFixed(1);
+                        } else if (statKey === 'selected_by_percent' && value !== '-') {
+                            value = value + '%';
+                        }
+                        row.append(`<td class="player-${playerNumber}">${value}</td>`);
+                    });
+
+                    // Compare values to add the star for better stats
+                    if (playerStats[1] && playerStats[2] && statKey !== 'selected_by_percent') {
+                        const player1Value = parseFloat(playerStats[1][statKey]);
+                        const player2Value = parseFloat(playerStats[2][statKey]);
+
+                        if (!isNaN(player1Value) && !isNaN(player2Value)) {
+                            if (player1Value > player2Value) {
+                                row.find('.player-1').append(' <i class="fas fa-star better-stat"></i>');
+                            } else if (player2Value > player1Value) {
+                                row.find('.player-2').append(' <i class="fas fa-star better-stat"></i>');
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Event listeners for player selection
+            $('#player1-select').change(function() {
+                fetchPlayerStats($(this).val(), 1);
+            });
+
+            $('#player2-select').change(function() {
+                fetchPlayerStats($(this).val(), 2);
+            });
+        });
+    </script>
+</body>
+</html>

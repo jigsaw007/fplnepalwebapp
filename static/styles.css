@@ -1,0 +1,194 @@
+/* Base Colors */
+:root {
+    --primary-color: #37003c;
+    --secondary-color: #f5f5f5;
+    --header-bg-color: #281e5d;
+    --header-text-color: #ffffff;
+    --table-header-bg-color: #281e5d;
+    --table-header-text-color: #ffffff;
+    --table-bg-color: #ffffff;
+    --table-text-color: #000000;
+    --button-bg-color: #37003c;
+    --button-text-color: #ffffff;
+}
+
+/* Global Styles */
+body {
+    background-color: var(--secondary-color);
+    color: var(--table-text-color);
+    font-family: Arial, sans-serif;
+    
+}
+
+.container {
+    margin-top: 20px;
+    width: 95%;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.row.no-gutters {
+    margin-right: 0;
+    margin-left: 0;
+}
+
+.row.no-gutters > [class*='col-'] {
+    padding-right: 0;
+    padding-left: 0;
+}
+
+.jumbotron{
+    background: url(/static/popup_bg.png) no-repeat;
+    background-position: right;
+}
+
+.header {
+    margin-bottom: 20px;
+    padding: 20px;
+    background-color: var(--header-bg-color);
+    color: var(--header-text-color);
+    border-radius: 5px;
+}
+
+.table {
+    margin-top: 20px;
+    background-color: var(--table-bg-color);
+    border-radius: 5px;
+}
+
+.table th, .table td {
+    vertical-align: middle;
+}
+
+.table thead th {
+    background-color: var(--table-header-bg-color);
+    color: var(--table-header-text-color);
+}
+
+.btn-primary {
+    background-color: var(--button-bg-color);
+    border-color: var(--button-bg-color);
+    color: var(--button-text-color);
+}
+
+.arrow-up {
+    color: green;
+    margin-right: 5px;
+}
+
+.arrow-down {
+    color: red;
+    margin-left: 5px;
+}
+
+.player-photo {
+    width: 40px;
+    height: auto;
+    border-radius: 3px;
+    margin-right: 10px;
+}
+
+.gameweek-row {
+    cursor: pointer;
+}
+
+/* Spinner */
+.spinner-border {
+    color: var(--button-bg-color);
+}
+
+
+.jumbotron,
+.table .thead-dark th,
+.card-header {
+    background-color: #37003c !important;
+}
+/* Navbar styles */
+.navbar {
+    background-color: #36003b;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.navbar-brand {
+    font-size: 2rem;
+    color: #fff !important;
+    font-weight: bold;
+}
+
+.navbar-nav .nav-item .nav-link {
+    color: #fff !important;
+    font-size: 1.1rem;
+    margin-right: 15px;
+    transition: color 0.3s ease-in-out;
+}
+
+.navbar-nav .nav-item .nav-link:hover {
+    color: #ffdd57 !important;
+    text-decoration: none;
+}
+
+.navbar-nav .nav-item .nav-link.active {
+    /* color: #ffdd57 !important; */
+    text-decoration: none;
+}
+
+.dataTables_paginate .paginate_button {
+    background-color: #3cbf5a !important;
+}
+.highest-scorer-box {
+    margin-bottom: 20px;
+    padding: 10px;
+    background-color: #f9f9f9;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.highest-scorer-box h4 {
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+    color: #007bff;
+}
+
+.highest-scorer-box .list-group-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #fff;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+.card .btn-primary {
+    background-color: #00ff87;
+    color: #35003a;
+    border: none;
+}
+/* Add any additional styles for fixtures page */
+.fixtures-table {
+    margin-top: 20px;
+}
+/* Existing styles */
+
+/* Additional styles for squad formation */
+.formation-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 10px;
+}
+
+.formation-row .player {
+    margin: 0 5px;
+    text-align: center;
+}
+
+.formation-row .player img {
+    display: block;
+    margin: 0 auto 5px;
+    width:85px;
+    height: auto;
+    border-radius: 50%;
+}
