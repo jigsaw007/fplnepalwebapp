@@ -20,7 +20,7 @@ jobs:
 
       - name: Deploy to PythonAnywhere
         run: |
-          ssh fplnepal@ssh.pythonanywhere.com <<EOF
+          ssh -o StrictHostKeyChecking=no fplnepal@ssh.pythonanywhere.com <<EOF
           cd /home/fplnepal/webapp
           git pull origin main
           source venv/bin/activate
