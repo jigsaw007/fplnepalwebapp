@@ -32,8 +32,12 @@ jobs:
         run: |
           ssh fplnepal@ssh.pythonanywhere.com <<EOF
           cd /home/fplnepal/webapp
-          rm -f .git/index.lock
+          git clean -fd
+          git reset --hard HEAD
           git pull origin main
+          if [ ! -d "venv" ]; then
+              python3 -m venv venv
+          fi
           source venv/bin/activate
           pip install -r requirements.txt
           touch /var/www/fplnepal_pythonanywhere_com_wsgi.py
