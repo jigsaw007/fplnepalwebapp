@@ -28,6 +28,15 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan ssh.pythonanywhere.com >> ~/.ssh/known_hosts
 
+      - name: Cache pip dependencies
+        id: cache-pip
+        uses: actions/cache@v2
+        with:
+          path: ~/.cache/pip
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
+
       - name: Deploy to PythonAnywhere
         run: |
           ssh fplnepal@ssh.pythonanywhere.com <<EOF
@@ -39,7 +48,7 @@ jobs:
               python3 -m venv venv
           fi
           source venv/bin/activate
-          pip install -r requirements.txt || true
+          pip install --cache-dir ~/.cache/pip -r requirements.txt || true
           touch /var/www/fplnepal_pythonanywhere_com_wsgi.py
           EOF
 
