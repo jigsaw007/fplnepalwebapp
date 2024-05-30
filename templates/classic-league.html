@@ -1,22 +1,12 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>FPL Classic League</title>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-    <style>
-        body {
-            background-color: #f5f5f5;
-            color: #36003b;
-        }
+{% extends 'base.html' %}
 
-        .jumbotron {
-            background-color: #343a40;
-            color: #fff;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
+{% block title %}
+    Classic League
+{% endblock %}
+
+{% block head %}
+    <style>
+
         .table {
             background-color: #fff;
             border-radius: 10px;
@@ -31,24 +21,8 @@
             color: #fff;
         }
     </style>
-</head>
-<body>
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg">
-        <a class="navbar-brand" href="#">FPL NEPAL WEB APP<p>Live updates about FPL NEPAL League, FPL Players, FPL TOOLS, Squad Optimization and much more..</p></a>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav ml-auto">
-                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
-                <li class="nav-item"><a class="nav-link" href="/players">Players</a></li>
-                <li class="nav-item"><a class="nav-link" href="/league">H2h League</a></li>
-                <li class="nav-item"><a class="nav-link" href="/league">Classic League</a></li>
-                <li class="nav-item"><a class="nav-link" href="/compare">Compare</a></li>
-                <li class="nav-item"><a class="nav-link" href="/whatif">What If</a></li>
-                <li class="nav-item"><a class="nav-link" href="/squad">Squad</a></li>
-            </ul>
-        </div>
-    </nav>
-
+      {% endblock %}
+      {% block content %}
     <div class="container">
         <div class="row no-gutters">
             <div class="col-md-12">
@@ -126,5 +100,4 @@
             });
         }
     </script>
-</body>
-</html>
+{% endblock %}
