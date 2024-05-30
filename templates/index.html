@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>FPL User Input</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f5f5f5;
+            color: #36003b;
+        }
+
+        .jumbotron {
+            background-color: #343a40;
+            color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .card {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .card-header {
+            background-color: #007bff;
+            color: #fff;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .card-body {
+            border-radius: 0 0 10px 10px;
+        }
+
+        .team-logo {
+            width: 30px;
+            height: auto;
+        }
+
+        .region-flag {
+            width: 20px;
+            height: auto;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .table {
+            background-color: #fff;
+            border-radius: 10px;
+            /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); */
+        }
+
+        .thead-dark th {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        .list-group-item {
+            border: none;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 1040;
+            display: none; /* Initially hidden */
+        }
+
+        .loading-overlay.show {
+            display: block; /* Show overlay when needed */
+        }
+
+        .loading-spinner {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1050;
+            font-size: 3rem;
+            color: #007bff;
+            display: none; /* Initially hidden */
+            text-align: center;
+        }
+
+        .loading-spinner.show {
+            display: block; /* Show spinner when needed */
+        }
+
+        .loading-text {
+            margin-top: 1rem;
+            font-size: 1.5rem;
+            color: #007bff;
+        }
+
+        @keyframes ellipsis {
+            0% { content: "."; }
+            33% { content: ".."; }
+            66% { content: "..."; }
+        }
+
+        .animated-ellipsis::after {
+            content: "";
+            animation: ellipsis steps(1,end) 1s infinite;
+        }
+
+        /* Add these styles for league standings */
+        .sidebar {
+            background-color: var(--secondary-color);
+            padding: 20px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        #classic-standings, #ultimate-standings {
+            margin-top: 10px;
+        }
+
+        #classic-standings table, #ultimate-standings table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        #classic-standings th, #classic-standings td, #ultimate-standings th, #ultimate-standings td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        #classic-standings th, #ultimate-standings th {
+            background-color: var(--header-bg-color);
+            color: var(--header-text-color);
+        }
+
+        #classic-standings td .player-name, #ultimate-standings td .player-name {
+            font-size: 0.8em;
+            color: gray;
+        }
+
+        .tabs {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            background-color: #ff007f;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .tabs a {
+            color: #fff;
+            text-align: center;
+            padding: 10px;
+            flex: 1;
+            text-decoration: none;
+            font-size: 16px;
+        }
+
+        .tabs a.active {
+            background-color: #291e5c;
+            border-radius: 5px;
+        }
+
+        .tabs a:hover {
+            background-color: #42357c;
+            border-radius: 5px;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .leaderboard-header {
+            text-align: center;
+            background-color: #291e5c;
+            color: white;
+            padding: 10px;
+            font-size: 1.5rem;
+            border-radius: 5px;
+        }
+
+        .leaderboard-table th {
+            background-color: #f8f8f8;
+            color: #000;
+            font-size: 1rem;
+        }
+
+        .leaderboard-table td {
+            font-size: 0.9rem;
+        }
+
+        .leaderboard-header p {
+            font-size: 15px;
+        }
+
+        .fixtures-table {
+            margin-top: 20px;
+        }
+
+        .fixtures-table th, .fixtures-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .fixtures-table th {
+            background-color: #007bff;
+            color: #fff;
+        }
+
+        .fixtures-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .team-logo {
+            width: 30px;
+            height: auto;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+
+        .container {
+            margin-top: 20px;
+            width: 95%;
+            max-width: 1200px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .row.no-gutters {
+            margin-right: 0;
+            margin-left: 0;
+        }
+
+        .row.no-gutters > [class*='col-'] {
+            padding-right: 0;
+            padding-left: 0;
+        }
+
+        .card .btn-primary:hover {
+    background-color: #007bff;
+        }
+        .formation {
+    position: relative;
+    background: url('{{ url_for('static', filename='soccerBG.png') }}') no-repeat center center;
+    background-size: cover;
+    padding: 20px;
+    border-radius: 10px;
+    width: 100%;
+    height: 600px;  /* Adjust the height to fit the layout */
+}
+.player {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+.player img {
+    width: 80px;  /* Corrected size */
+    height: auto;
+    margin-bottom: 5px;
+}
+.player p {
+    margin: 0;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 2px 5px;
+    border-radius: 5px;
+    font-size: 10px;
+}
+.GKP1 { top: 10%; left: 50%; transform: translateX(-50%); }
+.DEF1 { top: 30%; left: 20%; transform: translateX(-50%); }
+.DEF2 { top: 30%; left: 40%; transform: translateX(-50%); }
+.DEF3 { top: 30%; left: 60%; transform: translateX(-50%); }
+.DEF4 { top: 30%; left: 80%; transform: translateX(-50%); }
+.MID1 { top: 50%; left: 20%; transform: translateX(-50%); }
+.MID2 { top: 50%; left: 35%; transform: translateX(-50%); }
+.MID3 { top: 50%; left: 65%; transform: translateX(-50%); }
+.MID4 { top: 50%; left: 80%; transform: translateX(-50%); }
+.FWD1 { top: 70%; left: 35%; transform: translateX(-50%); }
+.FWD2 { top: 70%; left: 65%; transform: translateX(-50%); }
+.bench-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    background-color: lightgreen;
+    padding: 10px;
+    border-radius: 10px;
+    margin-top: 20px;
+}
+.bench-player {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+.bench-player img {
+    width: 50px;  /* Smaller size for bench players */
+    height: auto;
+    margin-bottom: 5px;
+}
+.bench-player p {
+    margin: 0;
+    color: white;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 2px 5px;
+    border-radius: 5px;
+    font-size: 10px;
+}
+
+   /* Popup styles */
+   .popup-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 1060;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        display: none;
+    }
+
+    .popup-content {
+        background: #fff;
+        padding: 20px;
+        border-radius: 10px;
+        text-align: center;
+        max-width: 500px;
+        width: 90%;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        margin: auto;
+    }
+
+    .popup-content h4 {
+        margin-bottom: 15px;
+    }
+
+    .popup-content p {
+        margin-bottom: 20px;
+    }
+
+    .popup-content button {
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 5px;
+        cursor: pointer;
+    }
+
+    .popup-content button:hover {
+        background-color: #0056b3;
+    }
+    #compare-button {
+    background: url('/static/compareBG.png') no-repeat center center;
+    background-size: cover;
+    padding: 20px;
+    border-radius: 10px;
+    width: 100%;
+}
+#compare-button:hover {
+
+    opacity: 0.8;
+}
+.team-logos {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 10px 0;
+            background-color: #fff;
+        }
+        .team-logos img {
+            height: 30px;
+            margin: 0 10px;
+        }
+        .navbar p {
+            font-size: 10px;
+        }
+
+    </style>
+</head>
+<body>
+            <!-- Team Logos Container -->
+            <div class="team-logos" id="team-logos"></div>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg">
+        <a class="navbar-brand" href="#">FPL NEPAL WEB APP<p>Live updates about FPL NEPAL League, FPL Players, FPL TOOLS, Squad Optimization and much more..</p></a>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="/players">Players</a></li>
+                <li class="nav-item"><a class="nav-link" href="/league">League</a></li>
+                <li class="nav-item"><a class="nav-link" href="/compare">Compare</a></li>
+                <!-- <li class="nav-item"><a class="nav-link active" href="/fixtures">Fixtures</a></li> -->
+                <li class="nav-item"><a class="nav-link active" href="/whatif">What If</a></li>
+                <li class="nav-item"><a class="nav-link active" href="/squad">Squad</a></li>
+            </ul>
+        </div>
+    </nav>
+
+
+
+    <!-- Jumbotron -->
+    <!-- <div class="jumbotron jumbotron-fluid">
+        <div class="container">
+            <h1 class="display-4">Welcome to FPL Nepal Web App</h1>
+            <p class="lead">Live updates about FPL NEPAL League, FPL Players, FPL TOOLS, Squad Optimization and much more...</p>
+        </div>
+    </div> -->
+
+    <div class="container">
+        <div class="row no-gutters">
+            <div class="col-md-3">
+                <!-- Details Button -->
+                <div class="card mb-4">
+
+                    <button class="btn btn-primary" id="details-button">
+                    <div class="card-body">
+                       GW Transfers|History
+                    </div></button>
+                </div>
+
+                    <!-- New Check Registration Button -->
+    <div class="card mb-4">
+
+        <button class="btn btn-primary" id="check-reg-button">
+        <div class="card-body">
+           Check Registration
+        </div></button>
+    </div>
+
+    <!-- New Compare Players Button -->
+<div class="card mb-4">
+
+    <button class="btn btn-primary" id="compare-button">
+        <div class="card-body">
+            Compare Players
+        </div>
+    </button>
+</div>
+
+
+                <!-- Fixtures Table -->
+                <div class="card">
+                    <div class="card-body">
+                        <div class="fixtures-title">PL Results</div>
+                        <div class="table-responsive">
+                            <table class="table fixtures-table">
+                                <tbody id="fixtures-table-body">
+                                    <!-- Fixtures will be populated here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        Feature Player
+                    </div>
+                    <div class="card-body" id="feature-player">
+                        <!-- Feature player details will be populated here -->
+                    </div>
+                </div>
+                <!-- Weekly Squad Section -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        FPL Nepal Weekly Feature Squad
+                    </div>
+                    <div class="card-body">
+                        <div id="weekly-squad" class="formation">
+                            <!-- Weekly squad details will be populated here -->
+                        </div>
+                        <div id="weekly-bench-container" class="bench-container">
+                            <!-- Bench details will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <!-- Sidebar for league standings -->
+                <div class="card">
+                    <div class="leaderboard-header">FPL NEPAL Standings</div>
+                    <div class="tabs">
+                        <a href="#tab-classic" class="active">Classic</a>
+                        <a href="#tab-ultimate">Ultimate</a>
+                    </div>
+                    <div id="tab-classic" class="tab-content active">
+                        <div id="classic-standings"></div>
+                    </div>
+                    <div id="tab-ultimate" class="tab-content">
+                        <div id="ultimate-standings"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Popup -->
+<div class="popup-overlay" id="popup">
+    <div class="popup-content">
+        <h4>Notice</h4>
+        <p>FPL NEPAL webapp is still in beta and preparing new features for the upcoming season. Please inform if you find any bugs or errors.</p>
+        <button id="close-popup">Close</button>
+    </div>
+</div>
+
+
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>
+    <script>
+        $('#details-button').click(function() {
+            window.location.href = '/enter_id';
+        });
+            // New Check Registration Button functionality
+    $('#check-reg-button').click(function() {
+        console.log('Check Registration button clicked'); // Debugging log
+        window.location.href = '/checkreg';
+    });
+
+        $('#user-form').submit(function(event) {
+            event.preventDefault();
+            var userId = $('#user_id').val();
+            $('#loading-spinner').addClass('show'); // Show the spinner
+            $('#loading-overlay').addClass('show'); // Show the overlay
+            setTimeout(function() {
+                window.location.href = '/user/' + userId;
+            }, 100); // Delay to ensure spinner is shown
+        });
+
+        // Fetch classic standings and display in Classic tab
+        function loadClassicStandings() {
+            $.ajax({
+                url: '/api/classic-standings',
+                method: 'GET',
+                success: function(data) {
+                    let standingsHtml = `
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Name</th>
+                                    <th>Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    data.slice(0, 10).forEach(function(entry) {
+                        standingsHtml += `
+                            <tr>
+                                <td>${entry.rank_sort}</td>
+                                <td>${entry.entry_name}<br><span class="player-name">${entry.player_name}</span></td>
+                                <td>${entry.total}</td>
+                            </tr>
+                        `;
+                    });
+                    standingsHtml += `
+                            </tbody>
+                        </table>
+                    `;
+                    $('#classic-standings').html(standingsHtml);
+                },
+                error: function() {
+                    $('#classic-standings').html('<p>Failed to load standings.</p>');
+                }
+            });
+        }
+
+        // Fetch ultimate standings and display in Ultimate tab
+        function loadUltimateStandings() {
+            $.ajax({
+                url: '/api/ultimate-standings',
+                method: 'GET',
+                success: function(data) {
+                    let standingsHtml = `
+                        <table class="leaderboard-table">
+                            <thead>
+                                <tr>
+                                    <th>Rank</th>
+                                    <th>Name</th>
+                                    <th>Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    data.slice(0, 10).forEach(function(entry) {
+                        standingsHtml += `
+                            <tr>
+                                <td>${entry.rank_sort}</td>
+                                <td>${entry.entry_name}<br><span class="player-name">${entry.player_name}</span></td>
+                                <td>${entry.total}</td>
+                            </tr>
+                        `;
+                    });
+                    standingsHtml += `
+                            </tbody>
+                        </table>
+                    `;
+                    $('#ultimate-standings').html(standingsHtml);
+                },
+                error: function() {
+                    $('#ultimate-standings').html('<p>Failed to load standings.</p>');
+                }
+            });
+        }
+
+        loadClassicStandings();
+        loadUltimateStandings();
+
+        // Tabs functionality
+        $('.tabs a').on('click', function(e) {
+            e.preventDefault();
+            $('.tabs a').removeClass('active');
+            $(this).addClass('active');
+            $('.tab-content').removeClass('active');
+            $($(this).attr('href')).addClass('active');
+        });
+
+        // Fetch fixtures and display in the table
+        $(document).ready(function() {
+            function loadFixtures() {
+                $.get('/api/fixtures', function(data) {
+                    let fixturesHtml = '';
+                    const currentEvent = getCurrentEvent();
+                    const currentFixtures = data.filter(fixture => fixture.event === currentEvent);
+                    currentFixtures.forEach(function(fixture) {
+                        const score = fixture.finished ? `${fixture.team_h_score} - ${fixture.team_a_score}` : 'vs';
+                        fixturesHtml += `
+                            <tr>
+                                <td>${fixture.home_team.short_name}</td>
+                                <td>${score}</td>
+                                <td>${fixture.away_team.short_name}</td>
+                            </tr>
+                        `;
+                    });
+                    $('#fixtures-table-body').html(fixturesHtml);
+                });
+            }
+
+            function getCurrentEvent() {
+                return 38; // Example current event
+            }
+
+            loadFixtures();
+        });
+
+        $(document).ready(function() {
+    // Fetch and display feature player
+    $.get('/api/feature_player', function(data) {
+        if (data.error) {
+            $('#feature-player').html(`<div class="alert alert-danger">${data.error}</div>`);
+        } else {
+            const playerHtml = `
+                <div class="row">
+                    <div class="col-md-4">
+                        <img src="${data.photo}" alt="${data.name}" class="img-fluid">
+                    </div>
+                    <div class="col-md-8">
+                        <h3>${data.name}</h3>
+                        <p><strong>Full Name:</strong> ${data.full_name}</p>
+                        <p><strong>Team:</strong> ${data.team}</p>
+                        <p><strong>Goals:</strong> ${data.goals}</p>
+                        <p><strong>Assists:</strong> ${data.assists}</p>
+                        <p><strong>Total Points:</strong> ${data.total_points}</p>
+                    </div>
+                </div>
+            `;
+            $('#feature-player').html(playerHtml);
+        }
+    });
+
+    // Fetch and display weekly squad
+    $.get('/api/weekly_squad', function(data) {
+        if (data.error) {
+            $('#weekly-squad').html(`<div class="alert alert-danger">${data.error}</div>`);
+        } else {
+            let squadHtml = "";
+            let benchHtml = "";
+            const positions = ["GKP1", "DEF1", "DEF2", "DEF3", "DEF4", "MID1", "MID2", "MID3", "MID4", "FWD1", "FWD2"];
+
+            data.squad.forEach((player, index) => {
+                squadHtml += `
+                    <div class="player ${positions[index]}">
+                        <img src="${player.photo}" alt="${player.name}" class="img-fluid">
+                        <p><strong>${player.name}</strong></p>
+                    </div>
+                `;
+            });
+
+            data.bench.forEach(player => {
+                benchHtml += `
+                    <div class="bench-player">
+                        <img src="${player.photo}" alt="${player.name}" class="img-fluid">
+                        <p><strong>${player.name}</strong></p>
+                    </div>
+                `;
+            });
+
+            $('#weekly-squad').html(squadHtml);
+            $('#weekly-bench-container').html(benchHtml);
+        }
+    });
+
+    // Existing functionality...
+
+    // New Check Registration Button functionality
+    $('#check-reg-button').click(function() {
+        console.log('Check Registration button clicked'); // Debugging log
+        window.location.href = '/checkreg';
+    });
+});
+
+$(document).ready(function() {
+    // Show the popup
+    $('#popup').fadeIn();
+
+    // Close the popup
+    $('#close-popup').click(function() {
+        $('#popup').fadeOut();
+    });
+});
+
+$(document).ready(function() {
+    // New Compare Players Button functionality
+    $('#compare-button').click(function() {
+        window.location.href = '/compare';
+    });
+});
+function loadTeamLogos() {
+            $.get('/api/teams', function(data) {
+                const teams = data.teams;
+                const teamLogosContainer = $('#team-logos');
+                teams.forEach(team => {
+                    const logoUrl = `https://resources.premierleague.com/premierleague/badges/t${team.code}.png`;
+                    const logoImg = `<img src="${logoUrl}" alt="${team.name} logo" title="${team.name}">`;
+                    teamLogosContainer.append(logoImg);
+                });
+            });
+        }
+
+        $(document).ready(function() {
+            loadTeamLogos();
+        });
+
+
+    </script>
+</body>
+</html>
