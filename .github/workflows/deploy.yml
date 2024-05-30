@@ -37,3 +37,7 @@ jobs:
           pip install -r requirements.txt
           touch /var/www/fplnepal_pythonanywhere_com_wsgi.py
           EOF
+
+      - name: Restart PythonAnywhere web app
+        run: |
+          ssh fplnepal@ssh.pythonanywhere.com "pa_reload_web_app fplnepal"
