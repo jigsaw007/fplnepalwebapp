@@ -32,6 +32,7 @@ jobs:
         run: |
           ssh fplnepal@ssh.pythonanywhere.com <<EOF
           cd /home/fplnepal/webapp
+          rm -f .git/index.lock
           git pull origin main
           source venv/bin/activate
           pip install -r requirements.txt
