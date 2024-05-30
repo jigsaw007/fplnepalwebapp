@@ -9,6 +9,12 @@ import io
 
 app = Flask(__name__)
 
+@app.before_request
+def before_request():
+    if request.url.startswith('http://'):
+        url = request.url.replace('http://', 'https://', 1)
+        return redirect(url, code=301)
+
 # API Endpoints
 BASE_URL = "https://fantasy.premierleague.com/api/"
 BOOTSTRAP_STATIC_URL = f"{BASE_URL}bootstrap-static/"
