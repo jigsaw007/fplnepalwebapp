@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}My Web App{% endblock %}</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <!-- Google Tag Manager -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-9HXXFE93ZC"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-9HXXFE93ZC');
+    </script>
+    <!-- Google AdSense -->
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6697752785156392"
+     crossorigin="anonymous"></script>
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- Team Logos Container -->
+    <div class="team-logos" id="team-logos"></div>
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg">
+        <a class="navbar-brand" href="#">FPL NEPAL WEB APP
+            <p>Live updates about FPL NEPAL League, FPL Players, FPL TOOLS, Squad Optimization, and much more...</p>
+        </a>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item"><a class="nav-link" href="/">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="/players">Players</a></li>
+                <li class="nav-item"><a class="nav-link" href="/league">H2H League</a></li>
+                <li class="nav-item"><a class="nav-link" href="/classic-league">Classic League</a></li>
+                <li class="nav-item"><a class="nav-link" href="/compare">Compare</a></li>
+                <li class="nav-item"><a class="nav-link" href="/whatif">What If</a></li>
+                <li class="nav-item"><a class="nav-link" href="/squad">Squad</a></li>
+            </ul>
+        </div>
+    </nav>
+    {% block content %}{% endblock %}
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+    <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+    <script>
+        function loadTeamLogos() {
+            $.get('/api/teams', function(data) {
+                const teams = data.teams;
+                const teamLogosContainer = $('#team-logos');
+                teams.forEach(team => {
+                    const logoUrl = `https://resources.premierleague.com/premierleague/badges/t${team.code}.png`;
+                    const logoImg = `<img src="${logoUrl}" alt="${team.name} logo" title="${team.name}">`;
+                    teamLogosContainer.append(logoImg);
+                });
+            });
+        }
+        $(document).ready(function() {
+            loadTeamLogos();
+        });
+    </script>
+</body>
+</html>
