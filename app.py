@@ -465,7 +465,13 @@ def user_details(user_id):
     grouped_transfers = group_transfers_by_event(transfers)
     best_gameweeks, worst_gameweeks = get_best_and_worst_gameweeks(gameweek_history)
     most_selected_player = get_most_selected_player(user_id)
-    
+
+    # Prepare player details with correct photo URLs
+    for transfer_list in grouped_transfers.values():
+        for transfer in transfer_list:
+            transfer['photo_in'] = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{next(player['photo'] for player in players if player['id'] == transfer['element_in']).replace('.jpg', '')}.png"
+            transfer['photo_out'] = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{next(player['photo'] for player in players if player['id'] == transfer['element_out']).replace('.jpg', '')}.png"
+
     return render_template('user_details.html', user_data=user_data, gameweek_history=gameweek_history, transfers=grouped_transfers, players=players, best_gameweeks=best_gameweeks, worst_gameweeks=worst_gameweeks, teams=teams, items_per_page=ITEMS_PER_PAGE, transfers_items_per_page=TRANSFERS_ITEMS_PER_PAGE, most_selected_player=most_selected_player)
 
 @app.route('/api/gameweek_history/<int:user_id>/<int:page>', methods=['GET'])
@@ -751,6 +757,7 @@ def get_ultimate_standings():
         return jsonify(simplified_standings)
     except requests.exceptions.RequestException as e:
         return jsonify({"error": "Failed to fetch ultimate standings"}), 500
+
 
 def get_user_data(user_id):
     try:
