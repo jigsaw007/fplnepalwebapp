@@ -398,6 +398,20 @@
         #compare-button .card-body{
             color: white;
         }
+        button#check-reg-button {
+            background: url(/static/haaland.png) no-repeat center right, 
+            url(/static/watkin.png) no-repeat center left;
+            background-size: contain;
+        }
+        button#check-reg-button:hover,
+        button#details-button:hover{
+            opacity: 0.5;
+        }
+        button#details-button{
+            background: url(/static/arrowshuffle.png) no-repeat center right #00ff87;
+            background-size: revert;
+            }
+        
     </style>
           {% endblock %}
           {% block content %}
@@ -408,11 +422,11 @@
             <div class="col-md-3">
                 <!-- Details Button -->
                 <div class="card mb-4">
-
                     <button class="btn btn-primary" id="details-button">
-                    <div class="card-body">
-                       GW Transfers|History
-                    </div></button>
+                        <div class="card-body">
+                           GW Transfers|History
+                        </div>
+                    </button>
                 </div>
 
                     <!-- New Check Registration Button -->
