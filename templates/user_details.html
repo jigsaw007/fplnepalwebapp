@@ -6,7 +6,6 @@
 
 {% block head %}
     <style>
-
         .card {
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             border-radius: 10px;
@@ -51,10 +50,9 @@
             margin: 20px 0;
         }
     </style>
-      {% endblock %}
+{% endblock %}
     
-      {% block content %}
-
+{% block content %}
     <div class="container">
         <div class="row">
             <div class="col-lg-8">
@@ -119,12 +117,12 @@
                                             <tr>
                                                 <td>
                                                     <i class="fas fa-arrow-up arrow-up"></i>
-                                                    <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p{{ players[transfer['element_in']]['photo'].replace('.jpg', '') }}.png" class="player-photo" alt="{{ players[transfer['element_in']]['web_name'] }}"> 
+                                                    <img src="{{ transfer['photo_in'] }}" class="player-photo" alt="{{ players[transfer['element_in']]['web_name'] }}"> 
                                                     {{ players[transfer['element_in']]['web_name'] }}
                                                 </td>
                                                 <td>
                                                     {{ players[transfer['element_out']]['web_name'] }}
-                                                    <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p{{ players[transfer['element_out']]['photo'].replace('.jpg', '') }}.png" class="player-photo" alt="{{ players[transfer['element_out']]['web_name'] }}"> 
+                                                    <img src="{{ transfer['photo_out'] }}" class="player-photo" alt="{{ players[transfer['element_out']]['web_name'] }}"> 
                                                     <i class="fas fa-arrow-down arrow-down"></i>
                                                 </td>
                                             </tr>
@@ -206,10 +204,10 @@
             </div>
         </div>
     </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
-<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>
 
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>
     <script src="{{ url_for('static', filename='scripts.js') }}"></script>
     <script>
         const itemsPerPage = {{ items_per_page }};
