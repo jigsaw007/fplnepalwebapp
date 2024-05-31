@@ -19,6 +19,16 @@ body {
     font-family: Arial, sans-serif;
     
 }
+html, body {
+    height: 100%;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.main-content {
+    flex: 1;
+}
 body {
     background-color: #f5f5f5;
     color: #36003b;
@@ -192,6 +202,9 @@ body {
     color: #35003a;
     border: none;
 }
+.card{
+    margin-bottom: 0px !important;
+}
 /* Add any additional styles for fixtures page */
 .fixtures-table {
     margin-top: 20px;
@@ -217,3 +230,60 @@ body {
     height: auto;
     border-radius: 50%;
 }
+/* Footer styling */
+.footer {
+    background-color: #35003a;
+    padding: 10px 0;
+    text-align: center;
+    width: 100%;
+    color: white;
+}
+
+.social-icons {
+    margin-top: 10px;
+}
+
+.social-icons .fa-brands {
+    padding: 10px;
+    font-size: 20px;
+    width: 30px;
+    text-align: center;
+    text-decoration: none;
+    margin: 5px 2px;
+}
+
+.social-icons .fa-brands:hover {
+    opacity: 0.7;
+}
+
+.fa-facebook {
+    background: #3B5998;
+    color: white;
+}
+
+.fa-instagram {
+    background: #125688;
+    color: white;
+}
+
+.fa-twitter {
+    background: #55ACEE;
+    color: white;
+}
+.navbar-light .navbar-toggler {
+    color: rgb(255 255 255);}
+
+/* Media Query for mobile devices */
+@media (max-width: 767.98px) {
+    .navbar-toggler {
+        border: none;
+    }
+    .navbar-toggler-icon {
+        font-size: 1.5em;
+        color: #000;
+    }
+    .navbar p {
+        display: none;
+    }
+}
+
