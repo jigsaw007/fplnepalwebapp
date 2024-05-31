@@ -6,7 +6,6 @@
 
 {% block head %}
     <style>
-
         .container {
             margin-top: 20px;
             max-width: 800px;
@@ -155,6 +154,9 @@
 {% block content %}
     <div class="container">
         <div class="form-group">
+            <p>Have you ever speculated how your team would score if you had never made a single transfer or captain change?<br>
+                Are all those hours spent agonizing over team decisions really worth it? What if you had just set and forgot from day one?<br>
+                Enter your team ID below to discover the points you’d have if you left everything as it was...</p>
             <label for="team-id-input">Enter Team ID:</label>
             <input type="number" class="form-control" id="team-id-input" placeholder="Enter your team ID">
             <button class="btn btn-primary mt-2" id="submit-btn">Submit</button>
@@ -182,56 +184,66 @@
     </div>
 
     <script>
-        // Add your custom JavaScript here
         $('#submit-btn').click(function() {
             const teamId = $('#team-id-input').val();
             if (teamId) {
-                $('.overlay').show();
-                $.ajax({
-                    url: '/api/whatif/' + teamId,
-                    method: 'GET',
-                    success: function(data) {
-                        $('.overlay').hide();
-                        // Handle success response
-                        console.log(data);
-                        // Populate team details and result
-                        $('#team-details').html(`Manager: ${data.manager_name} | Team: ${data.team_name}`);
-                        $('#result').html(`Total Points: ${data.points}`);
-                        // Populate squad
-                        const squad = data.squad;
-                        $('#GK-row').empty();
-                        $('#DEF-row').empty();
-                        $('#MID-row').empty();
-                        $('#FWD-row').empty();
-                        $('#Bench-row').empty();
-                        squad.forEach(player => {
+                $('.overlay').show(); // Show the spinner overlay
+                $.get(`/api/whatif/${teamId}`, function(data) {
+                    if (data.error) {
+                        $('#result').html(`<div class="alert alert-danger">${data.error}</div>`);
+                    } else {
+                        // Display team details
+                        $('#team-details').html(`
+                            <p class="highlight">${data.manager_name}</p>
+                            <p class="highlight">${data.team_name}</p>
+                        `);
+
+                        $('#result').html(`
+                            <h3>What If Points</h3>
+                            <p>You would have ${data.points} points if you had never made a transfer or changed your captain since Gameweek 1.</p>
+                        `);
+
+                        const positions = {
+                            "GK": [],
+                            "DEF": [],
+                            "MID": [],
+                            "FWD": []
+                        };
+                        const benchPlayers = [];
+                        data.squad.forEach(player => {
+                            const isCaptain = player.is_captain ? '(C)' : '';
                             const playerHtml = `
                                 <div class="player">
-                                    <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/${player.photo}.png" alt="${player.name}">
-                                    <strong>${player.name}</strong>
-                                    <span class="player-total-points">${player.total_points} pts</span>
-                                </div>`;
-                            if (player.position === 'GK') {
-                                $('#GK-row').append(playerHtml);
-                            } else if (player.position === 'DEF') {
-                                $('#DEF-row').append(playerHtml);
-                            } else if (player.position === 'MID') {
-                                $('#MID-row').append(playerHtml);
-                            } else if (player.position === 'FWD') {
-                                $('#FWD-row').append(playerHtml);
-                            }
+                                    <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.photo.replace('.jpg', '').replace('p', '')}.png" alt="${player.name}">
+                                    <strong>${player.name} ${isCaptain}</strong>
+                                    <div class="player-total-points">${player.total_points} points</div>
+                                </div>
+                            `;
                             if (player.is_bench) {
-                                $('#Bench-row').append(playerHtml);
+                                benchPlayers.push(`
+                                    <div class="bench-player">
+                                        <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p${player.photo.replace('.jpg', '').replace('p', '')}.png" alt="${player.name}">
+                                        <strong>${player.name} ${isCaptain}</strong>
+                                        <div class="player-total-points">${player.total_points} points</div>
+                                    </div>
+                                `);
+                            } else if (positions[player.position]) {
+                                positions[player.position].push(playerHtml);
                             }
                         });
+                        $('#GK-row').html(positions.GK.join(''));
+                        $('#DEF-row').html(positions.DEF.join(''));
+                        $('#MID-row').html(positions.MID.join(''));
+                        $('#FWD-row').html(positions.FWD.join(''));
+                        $('#Bench-row').html(benchPlayers.join(''));
+
+                        // Show formation and bench containers
                         $('.formation-container').show();
-                    },
-                    error: function(error) {
-                        $('.overlay').hide();
-                        // Handle error response
-                        console.error(error);
-                        alert('Failed to fetch data. Please try again.');
                     }
+                    $('.overlay').hide(); // Hide the spinner overlay
+                }).fail(function() {
+                    $('.overlay').hide(); // Hide the spinner overlay if there's an error
+                    alert('Failed to fetch data. Please try again.');
                 });
             } else {
                 alert('Please enter a valid team ID.');
