@@ -457,44 +457,6 @@ def optimize_full_squad(team_id):
         logging.error(f"Error optimizing squad: {e}")
         return jsonify({"error": "Failed to optimize squad"}), 500
 
-@app.route('/user/<int:user_id>')
-def user_details(user_id):
-    user_data = get_user_data(user_id)
-    gameweek_history = get_gameweek_history(user_id)
-    transfers = get_transfers(user_id)
-    grouped_transfers = group_transfers_by_event(transfers)
-    best_gameweeks, worst_gameweeks = get_best_and_worst_gameweeks(gameweek_history)
-    most_selected_player = get_most_selected_player(user_id)
-
-    # Prepare player details with correct photo URLs
-    for transfer_list in grouped_transfers.values():
-        for transfer in transfer_list:
-            transfer['photo_in'] = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{next(player['photo'] for player in players if player['id'] == transfer['element_in']).replace('.jpg', '')}.png"
-            transfer['photo_out'] = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{next(player['photo'] for player in players if player['id'] == transfer['element_out']).replace('.jpg', '')}.png"
-
-    return render_template('user_details.html', user_data=user_data, gameweek_history=gameweek_history, transfers=grouped_transfers, players=players, best_gameweeks=best_gameweeks, worst_gameweeks=worst_gameweeks, teams=teams, items_per_page=ITEMS_PER_PAGE, transfers_items_per_page=TRANSFERS_ITEMS_PER_PAGE, most_selected_player=most_selected_player)
-
-@app.route('/api/gameweek_history/<int:user_id>/<int:page>', methods=['GET'])
-def api_gameweek_history(user_id, page):
-    gameweek_history = get_gameweek_history(user_id)['current']
-    start = (page - 1) * ITEMS_PER_PAGE
-    end = start + ITEMS_PER_PAGE
-    paginated_history = gameweek_history[start:end]
-    return jsonify(paginated_history)
-
-@app.route('/api/transfers/<int:user_id>/<int:page>', methods=['GET'])
-def api_transfers(user_id, page):
-    transfers = get_transfers(user_id)
-    grouped_transfers = group_transfers_by_event(transfers)
-    paginated_transfers = {}
-    events = list(grouped_transfers.keys())
-    start = (page - 1) * TRANSFERS_ITEMS_PER_PAGE
-    end = start + TRANSFERS_ITEMS_PER_PAGE
-    paginated_events = events[start:end]
-    for event in paginated_events:
-        paginated_transfers[event] = grouped_transfers[event]
-    return jsonify(paginated_transfers)
-
 @app.route('/players')
 def players_page():
     players = get_player_details()
@@ -915,6 +877,150 @@ def get_most_selected_player(user_id):
         logging.error(f"Error fetching most selected player: {e}")
         return {}
 
+@app.route('/history')
+def history_page():
+    return render_template('history.html')
+
+@app.route('/api/history/<int:team_id>', methods=['GET'])
+def get_history(team_id):
+    try:
+        page = int(request.args.get('page', 1))
+        per_page = int(request.args.get('per_page', 10))
+
+        # Fetch user data
+        user_response = requests.get(f"{ENTRY_URL}{team_id}/")
+        user_response.raise_for_status()
+        user_data = user_response.json()
+        manager_name = f"{user_data['player_first_name']} {user_data['player_last_name']}"
+        team_name = user_data['name']
+        region = user_data['player_region_name']
+        favourite_team = teams.get(user_data['favourite_team'], "N/A")
+        total_points = user_data['summary_overall_points']
+        rank = user_data['summary_overall_rank']
+
+        # Fetch history data
+        history_response = requests.get(f"{ENTRY_URL}{team_id}/history/")
+        history_response.raise_for_status()
+        data = history_response.json()
+        
+        # Get chips used
+        chips_used = {chip['event']: chip['name'] for chip in data['chips']}
+        
+        history = []
+        best_gameweeks = []
+        worst_gameweeks = []
+        max_points = -1
+        min_points = float('inf')
+        total_bench_points = 0
+
+        for event in data['current']:
+            gameweek_data = {
+                "Gameweek": event['event'],
+                "Points": event['points'],
+                "Overall Rank": event['overall_rank'],
+                "Points on Bench": event['points_on_bench'],
+                "Bank": event['bank'] / 10.0,
+                "Value": event['value'] / 10.0,
+                "Chips Used": chips_used.get(event['event'], "")
+            }
+
+            history.append(gameweek_data)
+            total_bench_points += event['points_on_bench']
+
+            # Determine best and worst gameweeks
+            if event['points'] > max_points:
+                max_points = event['points']
+                best_gameweeks = [gameweek_data]
+            elif event['points'] == max_points:
+                best_gameweeks.append(gameweek_data)
+
+            if event['points'] < min_points:
+                min_points = event['points']
+                worst_gameweeks = [gameweek_data]
+            elif event['points'] == min_points:
+                worst_gameweeks.append(gameweek_data)
+
+        # Pagination
+        total_items = len(history)
+        total_pages = (total_items + per_page - 1) // per_page
+        start = (page - 1) * per_page
+        end = start + per_page
+        paginated_history = history[start:end]
+        
+        # Fetch most selected player
+        picks = defaultdict(int)
+        for event in data['current']:
+            event_details_response = requests.get(f"{ENTRY_URL}{team_id}/event/{event['event']}/picks/")
+            event_details_response.raise_for_status()
+            event_details = event_details_response.json()
+            for player in event_details['picks']:
+                picks[player['element']] += 1
+
+        most_selected_player_id = max(picks, key=picks.get)
+        most_selected_player = next((player for player in players if player['id'] == most_selected_player_id), {})
+        
+        most_selected_player_info = {
+            "name": most_selected_player.get('web_name', 'Unknown'),
+            "photo": f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{most_selected_player.get('photo', '').replace('.jpg', '')}.png",
+            "count": picks[most_selected_player_id]
+        }
+        
+        return jsonify({
+            "manager_name": manager_name,
+            "team_name": team_name,
+            "region": region,
+            "favourite_team": favourite_team,
+            "total_points": total_points,
+            "rank": rank,
+            "history": paginated_history,
+            "most_selected_player": most_selected_player_info,
+            "best_gameweeks": best_gameweeks,
+            "worst_gameweeks": worst_gameweeks,
+            "total_bench_points": total_bench_points,  # Add total bench points here
+            "current_page": page,
+            "total_pages": total_pages
+        })
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error fetching history for team {team_id}: {e}")
+        return jsonify({"error": "Failed to fetch history"}), 500
+
+@app.route('/api/transfers/<int:team_id>', methods=['GET'])
+def get_transfers_data(team_id):
+    try:
+        response = requests.get(f"{ENTRY_URL}{team_id}/transfers/")
+        response.raise_for_status()
+        transfers_data = response.json()
+        
+        # Get player details
+        player_details = {player['id']: player for player in bootstrap_static_data['elements']}
+
+        # Format the transfers data
+        formatted_transfers = []
+        for transfer in transfers_data:
+            element_in = player_details.get(transfer['element_in'], {})
+            element_out = player_details.get(transfer['element_out'], {})
+            
+            formatted_transfers.append({
+                "gameweek": transfer['event'],
+                "transfer_in": {
+                    "id": element_in.get('id', ''),
+                    "name": element_in.get('web_name', ''),
+                    "photo": f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{element_in.get('photo', '').replace('.jpg', '')}.png"
+                },
+                "price_in": transfer['element_in_cost'] / 10.0,
+                "transfer_out": {
+                    "id": element_out.get('id', ''),
+                    "name": element_out.get('web_name', ''),
+                    "photo": f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{element_out.get('photo', '').replace('.jpg', '')}.png"
+                },
+                "price_out": transfer['element_out_cost'] / 10.0
+            })
+
+        return jsonify(formatted_transfers)
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error fetching transfers data: {e}")
+        return jsonify({"error": "Failed to fetch transfers data"}), 500
+    
 
 
 if __name__ == "__main__":
