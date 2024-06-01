@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}Team History{% endblock %}
+
+{% block head %}
+<style>
+body {
+    background-color: #f8f9fa;
+}
+.fixed-height {
+    height: 300px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+.fixed-height .card-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+#team-id-form {
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+#team-id {
+    width: 100%;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+#team-id-form button {
+    background-color: #6f42c1;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+#team-id-form button:hover {
+    background-color: #5a34a1;
+}
+.hidden-section {
+    display: none;
+}
+.visible-section {
+    /* display: flex;
+    flex-direction: row;
+    justify-content: space-between; 
+    gap: 20px;*/
+}
+#info-sections .right-sidebar{
+    margin-bottom: 10px;
+}
+#transfers-data {
+    margin-top: 20px;
+}
+#overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    display: none;
+}
+.spinner {
+    font-size: 3rem;
+    color: white;
+}
+#loading-text {
+    font-size: 1.5rem;
+    color: white;
+    margin-top: 20px;
+}
+@keyframes ellipsis {
+    0% {
+        content: "";
+    }
+    33% {
+        content: ".";
+    }
+    66% {
+        content: "..";
+    }
+    100% {
+        content: "...";
+    }
+}
+.ellipsis::after {
+    content: "";
+    animation: ellipsis steps(1,end) 1s infinite;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="overlay">
+    <i class="fa-solid fa-spinner fa-spin spinner"></i>
+    <div id="loading-text">Please wait, Fetching data<span class="ellipsis"></span></div>
+</div>
+<div class="container">
+    <h2 class="mt-4">Team History</h2>
+    <form id="team-id-form" class="form-inline mb-4">
+        <label for="team-id" class="sr-only">Team ID</label>
+        <input type="number" id="team-id" class="form-control" placeholder="Enter Team ID" required>
+        <button type="submit" class="btn">Get History</button>
+    </form>
+    <div class="row">
+        <div class="col-lg-8">
+            <div id="history-data"></div>
+            <nav>
+                <ul class="pagination" id="pagination"></ul>
+            </nav>
+            <div id="transfers-data"></div>
+        </div>
+        <div class="col-lg-4">
+    <div id="info-sections" class="hidden-section">
+        <div id="manager-info" class="right-sidebar">
+            <div class="card fixed-height">
+                <div class="card-body">
+                    <h4 id="team-name"></h4>
+                    <h6 class="text-muted" id="manager-name"></h6>
+                    <p id="region"></p>
+                    <p id="favourite-team"></p>
+                    <p id="total-points"></p>
+                    <p id="rank"></p>
+                </div>
+            </div>
+        </div>
+        <div id="most-selected-player" class="text-center right-sidebar">
+            <div class="card fixed-height">
+                <div class="card-body">
+                    <h5>Most Selected Player</h5>
+                    <img id="player-photo" class="img-thumbnail" style="width: 150px;" />
+                    <p class="mt-2" id="player-name"></p>
+                </div>
+            </div>
+        </div>
+        <div id="best-worst-gameweeks" class="right-sidebar">
+            <div class="card fixed-height">
+                <div class="card-body">
+                    <h5>Best Gameweek(s)</h5>
+                    <div id="best-gameweeks"></div>
+                    <h5 class="mt-4">Worst Gameweek(s)</h5>
+                    <div id="worst-gameweeks"></div>
+                    <h5 class="mt-4">Total Points on Bench</h5>
+                    <div id="total-bench-points"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+    <div class="col-lg-8">
+    <div id="history-data"></div>
+    <nav>
+        <ul class="pagination" id="pagination"></ul>
+    </nav>
+    <div id="transfers-data"></div>
+</div>
+</div>
+</div>
+
+<script>
+let currentPage = 1;
+const itemsPerPage = 10;
+
+document.getElementById('team-id-form').addEventListener('submit', function(event) {
+    event.preventDefault();
+    currentPage = 1;
+    showSpinner();
+    Promise.all([fetchHistoryData(), fetchTransfersData()])
+        .then(() => {
+            hideSpinner();
+        })
+        .catch(() => {
+            hideSpinner();
+        });
+});
+
+function showSpinner() {
+    document.getElementById('overlay').style.display = 'flex';
+}
+
+function hideSpinner() {
+    document.getElementById('overlay').style.display = 'none';
+}
+
+function fetchHistoryData() {
+    return new Promise((resolve, reject) => {
+        const teamId = document.getElementById('team-id').value;
+        fetch(`/api/history/${teamId}?page=${currentPage}&per_page=${itemsPerPage}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('info-sections').classList.add('hidden-section');
+                    document.getElementById('info-sections').classList.remove('visible-section');
+                    document.getElementById('history-data').innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                } else {
+                    document.getElementById('info-sections').classList.remove('hidden-section');
+                    document.getElementById('info-sections').classList.add('visible-section');
+
+                    // Update Manager Info
+                    document.getElementById('team-name').innerText = data.team_name;
+                    document.getElementById('manager-name').innerText = data.manager_name;
+                    document.getElementById('region').innerText = `Region: ${data.region}`;
+                    document.getElementById('favourite-team').innerText = `Favourite Team: ${data.favourite_team}`;
+                    document.getElementById('total-points').innerText = `Total Points: ${data.total_points}`;
+                    document.getElementById('rank').innerText = `Rank: ${data.rank}`;
+
+                    // Update Most Selected Player
+                    document.getElementById('player-photo').src = data.most_selected_player.photo;
+                    document.getElementById('player-name').innerText = `${data.most_selected_player.name} (${data.most_selected_player.count} times)`;
+
+                    // Update Best and Worst Gameweeks
+                    let bestGameweeksHtml = '';
+                    data.best_gameweeks.forEach(gw => {
+                        bestGameweeksHtml += `<p>Gameweek ${gw.Gameweek}: ${gw.Points} points</p>`;
+                    });
+                    document.getElementById('best-gameweeks').innerHTML = bestGameweeksHtml;
+
+                    let worstGameweeksHtml = '';
+                    data.worst_gameweeks.forEach(gw => {
+                        worstGameweeksHtml += `<p>Gameweek ${gw.Gameweek}: ${gw.Points} points</p>`;
+                    });
+                    document.getElementById('worst-gameweeks').innerHTML = worstGameweeksHtml;
+
+                    // Update Total Bench Points
+                    document.getElementById('total-bench-points').innerText = `Total Points on Bench: ${data.total_bench_points}`;
+
+                    // History Table
+                    let historyHtml = `<table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Gameweek</th>
+                                <th>Points</th>
+                                <th>Overall Rank</th>
+                                <th>Points on Bench</th>
+                                <th>Bank</th>
+                                <th>Value</th>
+                                <th>Chips Used</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                    data.history.forEach(event => {
+                        historyHtml += `<tr>
+                            <td>${event.Gameweek}</td>
+                            <td>${event.Points}</td>
+                            <td>${event["Overall Rank"]}</td>
+                            <td>${event["Points on Bench"]}</td>
+                            <td>${event.Bank.toFixed(1)}</td>
+                            <td>${event.Value.toFixed(1)}</td>
+                            <td>${event["Chips Used"]}</td>
+                        </tr>`;
+                    });
+                    historyHtml += `</tbody></table>`;
+                    document.getElementById('history-data').innerHTML = historyHtml;
+
+                    // Pagination
+                    const paginationHtml = createPagination(data.total_pages, data.current_page);
+                    document.getElementById('pagination').innerHTML = paginationHtml;
+                }
+                resolve();
+            })
+            .catch(error => {
+                console.error('Error fetching history:', error);
+                document.getElementById('info-sections').classList.add('hidden-section');
+                document.getElementById('info-sections').classList.remove('visible-section');
+                document.getElementById('history-data').innerHTML = `<div class="alert alert-danger">Failed to fetch history</div>`;
+                reject();
+            });
+    });
+}
+
+function fetchTransfersData() {
+    return new Promise((resolve, reject) => {
+        const teamId = document.getElementById('team-id').value;
+        fetch(`/api/transfers/${teamId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('transfers-data').innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                } else {
+                    let transfersHtml = `<h4>Transfers</h4><table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Gameweek</th>
+                                <th>Transfer In</th>
+                                <th>Price</th>
+                                <th>Transfer Out</th>
+                                <th>Price</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
+                    
+                    // Group transfers by gameweek
+                    const groupedTransfers = data.reduce((acc, transfer) => {
+                        acc[transfer.gameweek] = acc[transfer.gameweek] || [];
+                        acc[transfer.gameweek].push(transfer);
+                        return acc;
+                    }, {});
+
+                    Object.keys(groupedTransfers).forEach(gameweek => {
+                        const transfers = groupedTransfers[gameweek];
+                        transfers.forEach((transfer, index) => {
+                            transfersHtml += `<tr>
+                                ${index === 0 ? `<td rowspan="${transfers.length}">${gameweek}</td>` : ''}
+                                <td>
+                                    <img src="${transfer.transfer_in.photo}" alt="${transfer.transfer_in.name}" style="width: 40px; height: auto;">
+                                    ${transfer.transfer_in.name} <i class="fas fa-arrow-up" style="color: green; font-weight: bold;"></i>
+                                </td>
+                                <td>${transfer.price_in.toFixed(1)}</td>
+                                <td>
+                                    <img src="${transfer.transfer_out.photo}" alt="${transfer.transfer_out.name}" style="width: 40px; height: auto;">
+                                    ${transfer.transfer_out.name} <i class="fas fa-arrow-down" style="color: red; font-weight: bold;"></i>
+                                </td>
+                                <td>${transfer.price_out.toFixed(1)}</td>
+                            </tr>`;
+                        });
+                    });
+
+                    transfersHtml += `</tbody></table>`;
+                    document.getElementById('transfers-data').innerHTML = transfersHtml;
+                }
+                resolve();
+            })
+            .catch(error => {
+                console.error('Error fetching transfers:', error);
+                document.getElementById('transfers-data').innerHTML = `<div class="alert alert-danger">Failed to fetch transfers</div>`;
+                reject();
+            });
+    });
+}
+
+function createPagination(totalPages, currentPage) {
+    let paginationHtml = '';
+    for (let i = 1; i <= totalPages; i++) {
+        paginationHtml += `<li class="page-item ${i === currentPage ? 'active' : ''}">
+                            <a class="page-link" href="#" onclick="goToPage(${i})">${i}</a>
+                           </li>`;
+    }
+    return paginationHtml;
+}
+
+function goToPage(page) {
+    currentPage = page;
+    showSpinner();
+    fetchHistoryData()
+        .then(() => {
+            hideSpinner();
+        })
+        .catch(() => {
+            hideSpinner();
+        });
+}
+</script>
+{% endblock %}
