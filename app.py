@@ -246,8 +246,26 @@ def get_ultimate_standings_full():
 
 @app.route('/compare')
 def compare_page():
-    for player in players:
-        player['team_name'] = teams.get(player['team_code'], "Unknown Team")
+    teams = {team['id']: team['name'] for team in bootstrap_static_data['teams']}
+    players = [
+        {
+            'id': player['id'],
+            'first_name': player['first_name'],
+            'second_name': player['second_name'],
+            'team': player['team'],
+            'photo': player['photo'],
+            'web_name': player['web_name'],
+            'now_cost': player['now_cost'],
+            'total_points': player['total_points'],
+            'goals_scored': player['goals_scored'],
+            'assists': player['assists'],
+            'clean_sheets': player['clean_sheets'],
+            'starts': player['starts'],
+            'selected_by_percent': player['selected_by_percent'],
+            'points_per_game': player['points_per_game'],
+        }
+        for player in bootstrap_static_data['elements']
+    ]
     return render_template('compare.html', players=players, teams=teams)
 
 @app.route('/api/player/<int:player_id>', methods=['GET'])
