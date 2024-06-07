@@ -41,34 +41,33 @@
             color: gold;
             font-weight: bold;
         }
-        .search-box {
-            margin-bottom: 10px;
-        }
     </style>
-        {% endblock %}
-    
-        {% block content %}
+{% endblock %}
 
-
+{% block content %}
     <div class="container compare-container">
         <h1 class="text-center">Compare Players</h1>
         <div class="row">
             <div class="col-md-6 player-select">
-                <input type="text" id="player1-search" class="form-control search-box" placeholder="Enter Player Name 1 (You can enter first 2-3 letters&select from dropdown)">
-                <select id="player1-select" class="form-control">
-                    <option value="">Select a player</option>
-                    {% for player in players %}
-                        <option value="{{ player.id }}">{{ player.first_name }} {{ player.second_name }}</option>
+                <select id="team1-select" class="form-control">
+                    <option value="">Select a team</option>
+                    {% for team_id, team_name in teams.items() %}
+                        <option value="{{ team_id }}">{{ team_name }}</option>
                     {% endfor %}
+                </select>
+                <select id="player1-select" class="form-control mt-2">
+                    <option value="">Select a player</option>
                 </select>
             </div>
             <div class="col-md-6 player-select">
-                <input type="text" id="player2-search" class="form-control search-box" placeholder="Enter Player Name 2 (You can enter first 2-3 letters&select from dropdown)">
-                <select id="player2-select" class="form-control">
-                    <option value="">Select a player</option>
-                    {% for player in players %}
-                        <option value="{{ player.id }}">{{ player.first_name }} {{ player.second_name }}</option>
+                <select id="team2-select" class="form-control">
+                    <option value="">Select a team</option>
+                    {% for team_id, team_name in teams.items() %}
+                        <option value="{{ team_id }}">{{ team_name }}</option>
                     {% endfor %}
+                </select>
+                <select id="player2-select" class="form-control mt-2">
+                    <option value="">Select a player</option>
                 </select>
             </div>
         </div>
@@ -93,54 +92,57 @@
     <script src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>
 
     <script>
+        const players = {{ players|tojson }};
         let playerStats = {};
 
         $(document).ready(function() {
-            // Function to filter player options based on search input
-            function filterPlayerOptions(searchBox, playerSelect) {
-                const searchValue = $(searchBox).val().toLowerCase();
-                $(playerSelect).find('option').each(function() {
-                    const optionText = $(this).text().toLowerCase();
-                    $(this).toggle(optionText.includes(searchValue));
-                });
+            function populatePlayerDropdown(teamSelectId, playerSelectId) {
+                const teamId = $(teamSelectId).val();
+                const playerSelect = $(playerSelectId);
+                playerSelect.empty().append('<option value="">Select a player</option>');
+                
+                if (teamId) {
+                    const filteredPlayers = players.filter(player => player.team == parseInt(teamId));
+                    filteredPlayers.forEach(player => {
+                        playerSelect.append(`<option value="${player.id}">${player.first_name} ${player.second_name}</option>`);
+                    });
+                }
             }
 
-            $('#player1-search').on('input', function() {
-                filterPlayerOptions(this, '#player1-select');
+            $('#team1-select').change(function() {
+                populatePlayerDropdown('#team1-select', '#player1-select');
             });
 
-            $('#player2-search').on('input', function() {
-                filterPlayerOptions(this, '#player2-select');
+            $('#team2-select').change(function() {
+                populatePlayerDropdown('#team2-select', '#player2-select');
             });
 
-            // Function to fetch player stats
+            // Fetch player stats when a player is selected
+            $('#player1-select').change(function() {
+                fetchPlayerStats($(this).val(), 1);
+            });
+
+            $('#player2-select').change(function() {
+                fetchPlayerStats($(this).val(), 2);
+            });
+
             function fetchPlayerStats(playerId, playerNumber) {
                 if (!playerId) return;
 
                 $.get(`/api/player/${playerId}`, function(data) {
                     playerStats[playerNumber] = data;
-                    updatePlayerPhoto(playerNumber, data.photo);
-                    updatePlayerHeader(playerNumber, data.web_name);
+                    updatePlayerHeader(playerNumber, data.web_name, data.photo);
                     updateComparisonTable();
                 });
             }
 
-            // Function to update player photo
-            function updatePlayerPhoto(playerNumber, photo) {
-                // Remove any leading p's and the extension
+            function updatePlayerHeader(playerNumber, webName, photo) {
+                const headerElement = $(`#player${playerNumber}-header`);
                 const cleanedPhoto = photo.replace(/^p+/, '').split('.')[0];
                 const photoUrl = `https://resources.premierleague.com/premierleague/photos/players/110x140/p${cleanedPhoto}.png`;
-                const photoElement = `<img src="${photoUrl}" class="player-photo">`;
-                $(`#player${playerNumber}-header`).html(photoElement);
+                headerElement.html(`<img src="${photoUrl}" class="player-photo"><br>${webName}`);
             }
 
-            // Function to update player header with web name
-            function updatePlayerHeader(playerNumber, webName) {
-                const headerElement = $(`#player${playerNumber}-header`);
-                headerElement.html(headerElement.html() + `<br>${webName}`);
-            }
-
-            // Function to update the comparison table
             function updateComparisonTable() {
                 $('#comparison-table-body').empty();
 
@@ -199,15 +201,6 @@
                     }
                 });
             }
-
-            // Event listeners for player selection
-            $('#player1-select').change(function() {
-                fetchPlayerStats($(this).val(), 1);
-            });
-
-            $('#player2-select').change(function() {
-                fetchPlayerStats($(this).val(), 2);
-            });
         });
     </script>
 {% endblock %}
