@@ -1,0 +1,424 @@
+{% extends "base.html" %}
+
+{% block title %}Ones to Watch{% endblock %}
+
+{% block content %}
+<style>
+    .container {
+        margin-top: 50px;
+    }
+    h1 {
+        text-align: center;
+        margin-bottom: 50px;
+        font-weight: bold;
+        color: #343a40;
+    }
+    .table-container {
+        margin-bottom: 30px;
+        padding: 20px;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        border-radius: 10px;
+        background-color: #fff;
+    }
+    .table-container h2 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #17a2b8;
+    }
+    .table {
+        margin-bottom: 0;
+    }
+    .table th, .table td {
+        text-align: center;
+        vertical-align: middle;
+    }
+    .img-thumbnail {
+        border-radius: 50%;
+        width: 50px;
+    }
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    .col-md-4 {
+        flex: 0 0 30%;
+        max-width: 30%;
+        margin: 10px;
+    }
+</style>
+
+<div class="container">
+    <h1>Ones to Watch</h1>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="table-container">
+                <h2>Goals Scored</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Goals</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in top_10_goals_scored %}
+                        <tr>
+                            <td>
+                                {% if loop.first %}
+                                <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p{{ player.photo.replace('.jpg', '') }}.png" alt="{{ player.web_name }}" class="img-thumbnail">
+                                {% endif %}
+                                {{ player.web_name }}
+                            </td>
+                            <td>{{ player.goals_scored }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="table-container">
+                <h2>Assists</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Assists</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in top_10_assists %}
+                        <tr>
+                            <td>
+                                {% if loop.first %}
+                                <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p{{ player.photo.replace('.jpg', '') }}.png" alt="{{ player.web_name }}" class="img-thumbnail">
+                                {% endif %}
+                                {{ player.web_name }}
+                            </td>
+                            <td>{{ player.assists }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="table-container">
+                <h2>Clean Sheets</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Clean Sheets</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in top_10_clean_sheets %}
+                        <tr>
+                            <td>
+                                {% if loop.first %}
+                                <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p{{ player.photo.replace('.jpg', '') }}.png" alt="{{ player.web_name }}" class="img-thumbnail">
+                                {% endif %}
+                                {{ player.web_name }}
+                            </td>
+                            <td>{{ player.clean_sheets }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="table-container">
+                <h2>Influence</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Influence</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in top_10_influence %}
+                        <tr>
+                            <td>
+                                {% if loop.first %}
+                                <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p{{ player.photo.replace('.jpg', '') }}.png" alt="{{ player.web_name }}" class="img-thumbnail">
+                                {% endif %}
+                                {{ player.web_name }}
+                            </td>
+                            <td>{{ player.influence }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="table-container">
+                <h2>Creativity</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Creativity</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in top_10_creativity %}
+                        <tr>
+                            <td>
+                                {% if loop.first %}
+                                <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p{{ player.photo.replace('.jpg', '') }}.png" alt="{{ player.web_name }}" class="img-thumbnail">
+                                {% endif %}
+                                {{ player.web_name }}
+                            </td>
+                            <td>{{ player.creativity }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="table-container">
+                <h2>Threat</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Threat</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in top_10_threat %}
+                        <tr>
+                            <td>
+                                {% if loop.first %}
+                                <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p{{ player.photo.replace('.jpg', '') }}.png" alt="{{ player.web_name }}" class="img-thumbnail">
+                                {% endif %}
+                                {{ player.web_name }}
+                            </td>
+                            <td>{{ player.threat }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-md-4">
+            <div class="table-container">
+                <h2>Value Form</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Value Form</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in top_10_value_form %}
+                        <tr>
+                            <td>
+                                {% if loop.first %}
+                                <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p{{ player.photo.replace('.jpg', '') }}.png" alt="{{ player.web_name }}" class="img-thumbnail">
+                                {% endif %}
+                                {{ player.web_name }}
+                            </td>
+                            <td>{{ player.value_form }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="table-container">
+                <h2>Cost Change</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Cost Change</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in top_10_cost_change %}
+                        <tr>
+                            <td>
+                                {% if loop.first %}
+                                <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p{{ player.photo.replace('.jpg', '') }}.png" alt="{{ player.web_name }}" class="img-thumbnail">
+                                {% endif %}
+                                {{ player.web_name }}
+                            </td>
+                            <td>{{ (player.cost_change_start / 10) | float | round(2) }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="table-container">
+                <h2>Points Per Game</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Points Per Game</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in top_10_points_per_game %}
+                        <tr>
+                            <td>
+                                {% if loop.first %}
+                                <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p{{ player.photo.replace('.jpg', '') }}.png" alt="{{ player.web_name }}" class="img-thumbnail">
+                                {% endif %}
+                                {{ player.web_name }}
+                            </td>
+                            <td>{{ player.points_per_game }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="table-container">
+                <h2>Selected By Percent</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Selected By %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in top_10_selected_by_percent %}
+                        <tr>
+                            <td>
+                                {% if loop.first %}
+                                <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p{{ player.photo.replace('.jpg', '') }}.png" alt="{{ player.web_name }}" class="img-thumbnail">
+                                {% endif %}
+                                {{ player.web_name }}
+                            </td>
+                            <td>{{ player.selected_by_percent }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="table-container">
+                <h2>Starts</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Starts</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in top_10_starts %}
+                        <tr>
+                            <td>
+                                {% if loop.first %}
+                                <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p{{ player.photo.replace('.jpg', '') }}.png" alt="{{ player.web_name }}" class="img-thumbnail">
+                                {% endif %}
+                                {{ player.web_name }}
+                            </td>
+                            <td>{{ player.starts }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="table-container">
+                <h2>Expected Goals</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Expected Goals</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in top_10_expected_goals %}
+                        <tr>
+                            <td>
+                                {% if loop.first %}
+                                <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p{{ player.photo.replace('.jpg', '') }}.png" alt="{{ player.web_name }}" class="img-thumbnail">
+                                {% endif %}
+                                {{ player.web_name }}
+                            </td>
+                            <td>{{ player.expected_goals }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="table-container">
+                <h2>Expected Assists</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Expected Assists</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in top_10_expected_assists %}
+                        <tr>
+                            <td>
+                                {% if loop.first %}
+                                <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p{{ player.photo.replace('.jpg', '') }}.png" alt="{{ player.web_name }}" class="img-thumbnail">
+                                {% endif %}
+                                {{ player.web_name }}
+                            </td>
+                            <td>{{ player.expected_assists }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="table-container">
+                <h2>xG Involvements</h2>
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>xG Involvement</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for player in top_10_expected_goal_involvements %}
+                        <tr>
+                            <td>
+                                {% if loop.first %}
+                                <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p{{ player.photo.replace('.jpg', '') }}.png" alt="{{ player.web_name }}" class="img-thumbnail">
+                                {% endif %}
+                                {{ player.web_name }}
+                            </td>
+                            <td>{{ player.expected_goal_involvements }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
