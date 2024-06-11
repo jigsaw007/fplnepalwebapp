@@ -522,6 +522,9 @@
     <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>
     <script>
+
+        
+
         $('#details-button').click(function() {
             window.location.href = '/history';
         });
@@ -724,14 +727,20 @@
 });
 
 $(document).ready(function() {
-    // Show the popup
-    $('#popup').fadeIn();
+// Check if popup has been shown before
+if (!localStorage.getItem('popupShown')) {
+            // Show the popup
+            $('#popup').fadeIn();
+            // Mark as shown
+            localStorage.setItem('popupShown', 'true');
+        }
 
-    // Close the popup
-    $('#close-popup').click(function() {
-        $('#popup').fadeOut();
-    });
+        // Close the popup
+        $('#close-popup').click(function() {
+            $('#popup').fadeOut();
+        });
 });
+
 
 $(document).ready(function() {
     // New Compare Players Button functionality
