@@ -1039,7 +1039,55 @@ def get_transfers_data(team_id):
         logging.error(f"Error fetching transfers data: {e}")
         return jsonify({"error": "Failed to fetch transfers data"}), 500
     
+@app.route('/otw')
+def otw_page():
+    players_sorted = sorted(bootstrap_static_data['elements'], key=lambda x: (
+        x['goals_scored'],
+        x['assists'],
+        x['clean_sheets'],
+        float(x.get('influence', 0) or 0),
+        float(x.get('creativity', 0) or 0),
+        float(x.get('threat', 0) or 0),
+        float(x.get('value_form', 0) or 0),
+        x['cost_change_start'],
+        float(x.get('points_per_game', 0) or 0),
+        float(x.get('selected_by_percent', 0) or 0),
+        x['starts'],
+        float(x.get('expected_goals', 0) or 0),
+        float(x.get('expected_assists', 0) or 0),
+        float(x.get('expected_goal_involvements', 0) or 0)
+    ), reverse=True)
 
+    top_10_goals_scored = sorted(players_sorted, key=lambda x: x['goals_scored'], reverse=True)[:10]
+    top_10_assists = sorted(players_sorted, key=lambda x: x['assists'], reverse=True)[:10]
+    top_10_clean_sheets = sorted([p for p in players_sorted if p['element_type'] == 1], key=lambda x: x['clean_sheets'], reverse=True)[:10]
+    top_10_influence = sorted(players_sorted, key=lambda x: float(x.get('influence', 0) or 0), reverse=True)[:10]
+    top_10_creativity = sorted(players_sorted, key=lambda x: float(x.get('creativity', 0) or 0), reverse=True)[:10]
+    top_10_threat = sorted(players_sorted, key=lambda x: float(x.get('threat', 0) or 0), reverse=True)[:10]
+    top_10_value_form = sorted(players_sorted, key=lambda x: float(x.get('value_form', 0) or 0), reverse=True)[:10]
+    top_10_cost_change = sorted(players_sorted, key=lambda x: x['cost_change_start'], reverse=True)[:10]
+    top_10_points_per_game = sorted(players_sorted, key=lambda x: float(x.get('points_per_game', 0) or 0), reverse=True)[:10]
+    top_10_selected_by_percent = sorted(players_sorted, key=lambda x: float(x.get('selected_by_percent', 0) or 0), reverse=True)[:10]
+    top_10_starts = sorted(players_sorted, key=lambda x: x['starts'], reverse=True)[:10]
+    top_10_expected_goals = sorted(players_sorted, key=lambda x: float(x.get('expected_goals', 0) or 0), reverse=True)[:10]
+    top_10_expected_assists = sorted(players_sorted, key=lambda x: float(x.get('expected_assists', 0) or 0), reverse=True)[:10]
+    top_10_expected_goal_involvements = sorted(players_sorted, key=lambda x: float(x.get('expected_goal_involvements', 0) or 0), reverse=True)[:10]
 
+    return render_template('otw.html', 
+                           top_10_goals_scored=top_10_goals_scored,
+                           top_10_assists=top_10_assists,
+                           top_10_clean_sheets=top_10_clean_sheets,
+                           top_10_influence=top_10_influence,
+                           top_10_creativity=top_10_creativity,
+                           top_10_threat=top_10_threat,
+                           top_10_value_form=top_10_value_form,
+                           top_10_cost_change=top_10_cost_change,
+                           top_10_points_per_game=top_10_points_per_game,
+                           top_10_selected_by_percent=top_10_selected_by_percent,
+                           top_10_starts=top_10_starts,
+                           top_10_expected_goals=top_10_expected_goals,
+                           top_10_expected_assists=top_10_expected_assists,
+                           top_10_expected_goal_involvements=top_10_expected_goal_involvements)
+    
 if __name__ == "__main__":
     app.run(debug=True)
