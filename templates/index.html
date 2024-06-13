@@ -413,6 +413,12 @@
             background: url(/static/arrowshuffle.png) no-repeat center right #00ff87;
             background-size: revert;
             }
+            #captaincy-suggestions .list-group-item {
+    border: none;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
         
     </style>
           {% endblock %}
@@ -449,6 +455,49 @@
         </div>
     </button>
 </div>
+<div class="card mb-4">
+    <div class="card-header">
+        Captaincy Suggestions (Top 3)
+    </div>
+    <div class="card-body" id="captaincy-suggestions">
+        <!-- Captaincy suggestion will be populated here -->
+    </div>
+    <div class="card-footer text-right">
+        <button id="prev-button" class="btn btn-secondary"><i class="fa-solid fa-caret-left"></i></button>
+        <button id="next-button" class="btn btn-primary"><i class="fa-solid fa-caret-right"></i></button>
+    </div>
+</div>
+
+<style>
+    .player-card {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+    }
+    .player-card img {
+    width: 70px;
+    height: 90px;
+    margin-right: 15px;
+    border: none;
+    background: none;
+    box-shadow: 2px 2px 8px grey;
+    }
+    .player-info {
+        display: flex;
+        flex-direction: column;
+    }
+    .team-name {
+        font-size: 0.9em;
+        color: #555;
+    }
+    .card-footer button {
+                margin-left: 10px;
+            }
+</style>
 
 
                 <!-- Fixtures Table -->
@@ -523,7 +572,6 @@
     <script src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>
     <script>
 
-        
 
         $('#details-button').click(function() {
             window.location.href = '/history';
@@ -749,6 +797,45 @@ $(document).ready(function() {
     });
 });
 
+$(document).ready(function() {
+            let currentPlayerIndex = 0;
+            let players = [];
+
+            // Fetch and display captaincy suggestions
+            $.get('/api/captaincy_suggestions', function(data) {
+                if (data.error) {
+                    $('#captaincy-suggestions').html(`<div class="alert alert-danger">${data.error}</div>`);
+                } else {
+                    players = data;
+                    displayPlayer(currentPlayerIndex);
+                }
+            });
+
+            function displayPlayer(index) {
+                const player = players[index];
+                $('#captaincy-suggestions').html(`
+                    <div class="player-card">
+                        <img src="${player.photo}" alt="${player.name}" class="img-thumbnail">
+                        <div class="player-info">
+                            <strong>${player.name}</strong>
+                            <span class="team-name">(${player.team})</span><br>
+                            Points/Game: ${player.points_per_game}<br>
+                            Form: ${player.form}
+                        </div>
+                    </div>
+                `);
+            }
+
+            $('#next-button').click(function() {
+                currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+                displayPlayer(currentPlayerIndex);
+            });
+
+            $('#prev-button').click(function() {
+                currentPlayerIndex = (currentPlayerIndex - 1 + players.length) % players.length;
+                displayPlayer(currentPlayerIndex);
+            });
+        });
 
 
     </script>
