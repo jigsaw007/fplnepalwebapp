@@ -1088,6 +1088,52 @@ def otw_page():
                            top_10_expected_goals=top_10_expected_goals,
                            top_10_expected_assists=top_10_expected_assists,
                            top_10_expected_goal_involvements=top_10_expected_goal_involvements)
-    
-if __name__ == "__main__":
+
+BASE_URL = "https://fantasy.premierleague.com/api/"
+
+def get_bootstrap_static_data():
+    response = requests.get(f"{BASE_URL}bootstrap-static/")
+    response.raise_for_status()
+    return response.json()
+
+def calculate_captaincy_suggestions():
+    data = get_bootstrap_static_data()
+    players = data['elements']
+    teams = {team['id']: team['name'] for team in data['teams']}
+
+    player_scores = [
+        {
+            'id': player['id'],
+            'name': player['web_name'],
+            'team': teams[player['team']],
+            'total_points': player['total_points'],
+            'points_per_game': player['points_per_game'],
+            'form': player['form'],
+            'photo': f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{player['photo'].replace('.jpg', '')}.png"
+        }
+        for player in players
+    ]
+
+    # Sort players by form and total points
+    player_scores.sort(key=lambda x: (float(x['form']), -float(x['total_points'])), reverse=True)
+
+    # Select the top 3 players as captaincy suggestions
+    captaincy_suggestions = player_scores[:3]
+    return captaincy_suggestions
+
+@app.route('/api/captaincy_suggestions', methods=['GET'])
+def captaincy_suggestions():
+    try:
+        suggestions = calculate_captaincy_suggestions()
+        return jsonify(suggestions)
+    except Exception as e:
+        logging.error(f"Error fetching captaincy suggestions: {e}", exc_info=True)
+        return jsonify({"error": str(e)}), 500
+
+# @app.route('/captaincy_suggestions')
+# def captaincy_suggestions_page():
+#     return render_template('captaincy_suggestions.html')
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.DEBUG)
     app.run(debug=True)
