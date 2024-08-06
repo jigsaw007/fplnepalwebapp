@@ -7,7 +7,9 @@ from datetime import datetime
 import pandas as pd
 import io
 
-app = Flask(__name__)
+app = Flask(__name__, template_folder='templates')
+
+# logging.basicConfig(level=logging.DEBUG)
 
 # @app.before_request
 # def before_request():
@@ -30,6 +32,14 @@ players = bootstrap_static_data['elements']
 ITEMS_PER_PAGE = 8
 TRANSFERS_ITEMS_PER_PAGE = 10
 CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTtmBr6M5IENX5D2TN_Sdr1_2hqbS2MqVxm-faCDyT36vTyGrYUnx17Ln9qfiTPUkf7DT8KhITbq3yo/pub?output=csv"
+
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+@app.route('/favicon.ico')
+def favicon():
+    return send_from_directory(os.path.join(app.root_path, 'static'), 'favicon.ico', mimetype='image/vnd.microsoft.icon')
 
 def fetch_google_sheet_data(url):
     response = requests.get(url)
@@ -87,10 +97,6 @@ def score_player(player):
     total_score = sum(player_scores.values()) - player_scores['negative_factors']
     
     return total_score
-
-@app.route('/')
-def home():
-    return render_template('index.html')
 
 @app.route('/api/feature_player', methods=['GET'])
 def get_feature_player():
@@ -495,14 +501,12 @@ def league_page():
     return render_template('league.html')
 
 LEAGUE_IDS = {
-    "Div A": 571897,
-    "Div B": 571898,
-    "Div C": 571899,
-    "Div D": 571902,
-    "Div E": 571905,
-    "Div F": 571906,
-    "Div G": 571907,
-    "Div H": 590971
+    "Div A": 446714,
+    "Div B": 446717,
+    "Div C": 446720,
+    "Div D": 446723,
+    "Div E": 446724,
+    "Div F": 446727,
 }
 
 @app.route('/api/leagues', methods=['GET'])
@@ -701,7 +705,7 @@ def get_whatif_points(team_id):
 @app.route('/api/classic-standings', methods=['GET'])
 def get_classic_standings():
     try:
-        response = requests.get('https://fantasy.premierleague.com/api/leagues-classic/604351/standings/')
+        response = requests.get('https://fantasy.premierleague.com/api/leagues-classic/420585/standings/')
         response.raise_for_status()
         data = response.json()
         standings = data['standings']['results']
@@ -721,7 +725,7 @@ def get_classic_standings():
 @app.route('/api/ultimate-standings', methods=['GET'])
 def get_ultimate_standings():
     try:
-        response = requests.get('https://fantasy.premierleague.com/api/leagues-classic/345282/standings/')
+        response = requests.get('https://fantasy.premierleague.com/api/leagues-classic/420581/standings/')
         response.raise_for_status()
         data = response.json()
         standings = data['standings']['results']
@@ -1133,7 +1137,45 @@ def captaincy_suggestions():
 # @app.route('/captaincy_suggestions')
 # def captaincy_suggestions_page():
 #     return render_template('captaincy_suggestions.html')
+#app = Flask(__name__)
+
+BASE_URL = "https://fantasy.premierleague.com/api/"
+
+def fetch_data(endpoint):
+    response = requests.get(f"{BASE_URL}{endpoint}")
+    response.raise_for_status()
+    return response.json()
+
+@app.route('/api/player_data', methods=['GET'])
+def get_player_data():
+    data = fetch_data("bootstrap-static/")
+    players = data['elements']
+    teams = {team['id']: team['name'] for team in data['teams']}
+    positions = {1: 'GK', 2: 'DEF', 3: 'MID', 4: 'FWD'}
+    for player in players:
+        player['team_name'] = teams[player['team']]
+        player['element_type'] = positions[player['element_type']]
+        player['photo'] = f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{player['photo'].replace('.jpg', '')}.png"
+    return jsonify(players)
+
+
+@app.route('/prediction')
+def prediction_page():
+    return render_template('prediction.html')
+
+@app.route('/api/players', methods=['GET'])
+def get_players():
+    try:
+        players = bootstrap_static_data['elements']
+        player_data = [{
+            'id': player['id'],
+            'web_name': player['web_name'],
+            'photo': f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{player['photo'].replace('.jpg', '')}.png",
+            'position': element_types[player['element_type']]
+        } for player in players]
+        return jsonify(player_data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
-    app.run(debug=True)
+    app.run(debug=True, port=5001)
