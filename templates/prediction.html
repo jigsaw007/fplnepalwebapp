@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}Prediction Page{% endblock %}
+
+{% block head %}
+<style>
+    .player-card { width: 100px; height: 150px; }
+    .player-image { width: 100%; height: auto; }
+    .player-button { margin: 5px 0; }
+    .selected-player { display: inline-block; margin: 5px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Prediction Page</h1>
+    <div id="squad-selection">
+        <h2>Select Your Squad</h2>
+        <div id="available-players" class="row">
+            <!-- Add available players here dynamically -->
+        </div>
+        <h3>Selected Squad</h3>
+        <div id="selected-squad" class="row">
+            <!-- Display selected players here -->
+        </div>
+        <button id="confirm-squad" class="btn btn-primary">Confirm Squad</button>
+    </div>
+    <div id="starting-lineup" class="d-none">
+        <h2>Select Starting 11</h2>
+        <div id="selected-players" class="row">
+            <!-- Display selected starting 11 here -->
+        </div>
+        <div id="bench-players" class="row">
+            <!-- Display bench players here -->
+        </div>
+        <button id="predict-points" class="btn btn-success" disabled>Predict Points</button>
+        <p id="total-predicted-points">Total Predicted Points: 0</p>
+    </div>
+</div>
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
+<script>
+    const availablePlayers = [
+        { id: 1, name: "Onana", position: "GK", imageUrl: "path/to/image1.png" },
+        { id: 2, name: "White", position: "DEF", imageUrl: "path/to/image2.png" },
+        { id: 3, name: "Saliba", position: "DEF", imageUrl: "path/to/image3.png" },
+        { id: 4, name: "Gabriel", position: "DEF", imageUrl: "path/to/image4.png" },
+        { id: 5, name: "Branthwaite", position: "DEF", imageUrl: "path/to/image5.png" },
+        { id: 6, name: "Walker", position: "DEF", imageUrl: "path/to/image6.png" },
+        { id: 7, name: "B.Fernandes", position: "MID", imageUrl: "path/to/image7.png" },
+        { id: 8, name: "Gross", position: "MID", imageUrl: "path/to/image8.png" },
+        { id: 9, name: "Bruno G.", position: "MID", imageUrl: "path/to/image9.png" },
+        { id: 10, name: "Ward-Prowse", position: "MID", imageUrl: "path/to/image10.png" },
+        { id: 11, name: "Diaby", position: "MID", imageUrl: "path/to/image11.png" },
+        { id: 12, name: "Fabianski", position: "GK", imageUrl: "path/to/image12.png" },
+        { id: 13, name: "Toti", position: "DEF", imageUrl: "path/to/image13.png" },
+        { id: 14, name: "Hudson-Odoi", position: "MID", imageUrl: "path/to/image14.png" }
+        // Add more players as needed
+    ];
+
+    const squad = {
+        GK: [],
+        DEF: [],
+        MID: [],
+        FWD: [],
+        BENCH: []
+    };
+
+    function updateAvailablePlayers() {
+        const container = $('#available-players');
+        container.empty();
+        availablePlayers.forEach(player => {
+            const card = `
+                <div class="col-md-2 player-card">
+                    <img src="${player.imageUrl}" alt="${player.name}" class="player-image">
+                    <button class="btn btn-primary player-button" onclick="selectPlayer(${player.id})">Select</button>
+                </div>
+            `;
+            container.append(card);
+        });
+    }
+
+    function selectPlayer(playerId) {
+        const player = availablePlayers.find(p => p.id === playerId);
+        if (player) {
+            if (squad[player.position].length < getMaxPositionCount(player.position)) {
+                squad[player.position].push(player);
+                updateSelectedSquad();
+            } else {
+                alert(`You cannot select more than ${getMaxPositionCount(player.position)} ${player.position} players.`);
+            }
+        }
+    }
+
+    function updateSelectedSquad() {
+        const container = $('#selected-squad');
+        container.empty();
+        Object.keys(squad).forEach(position => {
+            squad[position].forEach(player => {
+                const card = `
+                    <div class="col-md-2 player-card selected-player">
+                        <img src="${player.imageUrl}" alt="${player.name}" class="player-image">
+                        <button class="btn btn-danger player-button" onclick="removePlayer(${player.id})">Remove</button>
+                    </div>
+                `;
+                container.append(card);
+            });
+        });
+    }
+
+    function removePlayer(playerId) {
+        Object.keys(squad).forEach(position => {
+            squad[position] = squad[position].filter(p => p.id !== playerId);
+        });
+        updateSelectedSquad();
+    }
+
+    function getMaxPositionCount(position) {
+        switch (position) {
+            case 'GK': return 2;
+            case 'DEF': return 5;
+            case 'MID': return 5;
+            case 'FWD': return 3;
+            default: return 0;
+        }
+    }
+
+    function validateSquad() {
+        return squad.GK.length === 2 &&
+               squad.DEF.length === 5 &&
+               squad.MID.length === 5 &&
+               squad.FWD.length === 3;
+    }
+
+    $('#confirm-squad').click(() => {
+        if (validateSquad()) {
+            $('#squad-selection').addClass('d-none');
+            $('#starting-lineup').removeClass('d-none');
+            displayStartingLineupOptions();
+        } else {
+            alert('Please select a valid squad with 2 GK, 5 DEF, 5 MID, and 3 FWD.');
+        }
+    });
+
+    function displayStartingLineupOptions() {
+        const selectedPlayersContainer = $('#selected-players');
+        selectedPlayersContainer.empty();
+
+        Object.keys(squad).forEach(position => {
+            squad[position].forEach(player => {
+                const card = `
+                    <div class="col-md-2 player-card selected-player">
+                        <img src="${player.imageUrl}" alt="${player.name}" class="player-image">
+                        <button class="btn btn-primary player-button" onclick="addToStartingLineup(${player.id})">Add to Starting 11</button>
+                    </div>
+                `;
+                selectedPlayersContainer.append(card);
+            });
+        });
+    }
+
+    function addToStartingLineup(playerId) {
+        const player = findPlayerInSquad(playerId);
+        if (player && !isInStartingLineup(playerId)) {
+            if (canAddToStartingLineup(player)) {
+                squad.BENCH.push(player);
+                updateStartingLineup();
+            } else {
+                alert('Cannot add more players to the starting lineup with the current formation constraints.');
+            }
+        }
+    }
+
+    function findPlayerInSquad(playerId) {
+        let foundPlayer;
+        Object.keys(squad).forEach(position => {
+            const player = squad[position].find(p => p.id === playerId);
+            if (player) foundPlayer = player;
+        });
+        return foundPlayer;
+    }
+
+    function isInStartingLineup(playerId) {
+        return squad.BENCH.some(player => player.id === playerId);
+    }
+
+    function canAddToStartingLineup(player) {
+        const currentFormation = getFormation();
+        switch (player.position) {
+            case 'GK':
+                return currentFormation.GK < 1;
+            case 'DEF':
+                return currentFormation.DEF < 5;
+            case 'MID':
+                return currentFormation.MID < 5;
+            case 'FWD':
+                return currentFormation.FWD < 3;
+            default:
+                return false;
+        }
+    }
+
+    function getFormation() {
+        const formation = { GK: 0, DEF: 0, MID: 0, FWD: 0 };
+        squad.BENCH.forEach(player => {
+            formation[player.position]++;
+        });
+        return formation;
+    }
+
+    function updateStartingLineup() {
+        const formationContainer = $('#formation');
+        formationContainer.empty();
+
+        squad.BENCH.forEach(player => {
+            const card = `
+                <div class="col-md-2 player-card selected-player">
+                    <img src="${player.imageUrl}" alt="${player.name}" class="player-image">
+                    <button class="btn btn-danger player-button" onclick="removeFromStartingLineup(${player.id})">Remove from Starting 11</button>
+                </div>
+            `;
+            formationContainer.append(card);
+        });
+
+        const formation = getFormation();
+        if (formation.GK === 1 && formation.DEF >= 3 && formation.MID >= 3 && formation.FWD >= 1) {
+            $('#predict-points').prop('disabled', false);
+        } else {
+            $('#predict-points').prop('disabled', true);
+        }
+    }
+
+    function removeFromStartingLineup(playerId) {
+        squad.BENCH = squad.BENCH.filter(player => player.id !== playerId);
+        updateStartingLineup();
+    }
+
+    $(document).ready(() => {
+        updateAvailablePlayers();
+    });
+</script>
+{% endblock %}

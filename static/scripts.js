@@ -1,79 +1,5 @@
 $(document).ready(function() {
-    // Functionality for user details page
-    if (typeof userId !== 'undefined') {
-        $('#loading-spinner').show();
-        $.ajax({
-            url: '/api/user/' + userId,
-            method: 'GET',
-            success: function(data) {
-                $('#loading-spinner').hide();
-
-                $('#user-name').text(data.player_first_name + ' ' + data.player_last_name);
-                $('#current-points').text('Current Points: ' + data.summary_overall_points);
-                $('#total-points').text('Total Points: ' + data.summary_overall_points);
-                $('#rank').text('Rank: ' + data.summary_overall_rank);
-
-                var gameweekHistoryHtml = '';
-                data.gameweek_history.current.forEach(function(history) {
-                    gameweekHistoryHtml += '<tr><td>' + history.event + '</td><td>' + history.points + '</td><td>' + history.overall_rank + '</td><td>' + history.bench_points + '</td><td>£' + (history.bank).toFixed(1) + '</td><td>£' + (history.value).toFixed(1) + '</td><td>' + history.chip + '</td></tr>';
-                });
-                $('#gameweek-history').html(gameweekHistoryHtml);
-
-                var transfersHtml = '';
-                Object.keys(data.transfers).forEach(function(event) {
-                    transfersHtml += '<tr><td>' + event + '</td><td><table class="table table-sm"><tbody>';
-                    data.transfers[event].forEach(function(transfer) {
-                        var elementInPhoto = data.players[transfer.element_in].photo.replace('.jpg', '');
-                        var elementOutPhoto = data.players[transfer.element_out].photo.replace('.jpg', '');
-                        transfersHtml += '<tr><td><i class="fas fa-arrow-up arrow-up"></i> <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p' + elementInPhoto + '.png" class="player-photo" alt="' + data.players[transfer.element_in].web_name + '"> ' + data.players[transfer.element_in].web_name + '</td><td>' + data.players[transfer.element_out].web_name + ' <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p' + elementOutPhoto + '.png" class="player-photo" alt="' + data.players[transfer.element_out].web_name + '"> <i class="fas fa-arrow-down arrow-down"></i></td></tr>';
-                    });
-                    transfersHtml += '</tbody></table></td></tr>';
-                });
-                $('#transfers').html(transfersHtml);
-            },
-            error: function() {
-                $('#loading-spinner').hide();
-                alert('Failed to fetch user data.');
-            }
-        });
-
-        function paginate(id, totalItems, itemsPerPage) {
-            const totalPages = Math.ceil(totalItems / itemsPerPage);
-            let pagination = '';
-            for (let i = 1; i <= totalPages; i++) {
-                pagination += `<li class="page-item"><a class="page-link" href="#" onclick="loadPage('${id}', ${i}, ${itemsPerPage}, event)">${i}</a></li>`;
-            }
-            document.getElementById(id).innerHTML = pagination;
-        }
-
-        function loadPage(id, page, itemsPerPage, event) {
-            event.preventDefault();
-            if (id === 'gameweek-pagination') {
-                $('#gameweek-loading-spinner').show();
-                $.get(`/api/gameweek_history/${userId}/${page}`, function(data) {
-                    let rows = '';
-                    data.forEach(history => {
-                        rows += `
-                            <tr>
-                                <td>${history.event}</td>
-                                <td>${history.points}</td>
-                                <td>${history.overall_rank}</td>
-                                <td>${history.bench_points}</td>
-                                <td>£${(history.bank / 10.0).toFixed(1)}</td>
-                                <td>£${(history.value / 10.0).toFixed(1)}</td>
-                                <td>${history.chip}</td>
-                            </tr>`;
-                    });
-                    $('#gameweek-history').html(rows);
-                    $('#gameweek-loading-spinner').hide();
-                });
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            paginate('gameweek-pagination', totalGameweekHistory, itemsPerPage);
-        });
-    }
+    
 
     // Functionality for highest Gameweek scorers
     function loadLeagueData() {
@@ -421,4 +347,4 @@ $(document).ready(function() {
 });
 
 
-/*Classic League*/
+
