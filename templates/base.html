@@ -44,7 +44,15 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ml-auto">
                     <li class="nav-item"><a class="nav-link" href="/players">Players</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/league">H2H League</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="h2hLeagueDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            H2H League
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="h2hLeagueDropdown">
+                            <a class="dropdown-item" href="/league">League</a>
+                            <a class="dropdown-item" href="/division-allocation">Division Allocation</a> <!-- New link -->
+                        </div>
+                    </li>
                     <li class="nav-item"><a class="nav-link" href="/classic-league">Classic League</a></li>
                     <li class="nav-item"><a class="nav-link" href="/history">History</a></li>
                     <li class="nav-item"><a class="nav-link" href="/compare">Compare</a></li>
