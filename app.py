@@ -1216,6 +1216,36 @@ def get_player_data():
 @app.route('/prediction')
 def prediction_page():
     return render_template('prediction.html')
+    
+@app.route('/division-allocation')
+def division_allocation():
+    try:
+        sheet_urls = {
+            'Div_A': 'https://docs.google.com/spreadsheets/d/1wgPqLkxPnIgv7TxpppFxZ-_5p3AR8i29pcn7LI8jsD8/export?format=csv&gid=104567074',
+            'Div_B': 'https://docs.google.com/spreadsheets/d/1wgPqLkxPnIgv7TxpppFxZ-_5p3AR8i29pcn7LI8jsD8/export?format=csv&gid=311233695',
+            'Div_C': 'https://docs.google.com/spreadsheets/d/1wgPqLkxPnIgv7TxpppFxZ-_5p3AR8i29pcn7LI8jsD8/export?format=csv&gid=825469925',
+            'Div_D': 'https://docs.google.com/spreadsheets/d/1wgPqLkxPnIgv7TxpppFxZ-_5p3AR8i29pcn7LI8jsD8/export?format=csv&gid=1483351494',
+            'Div_E': 'https://docs.google.com/spreadsheets/d/1wgPqLkxPnIgv7TxpppFxZ-_5p3AR8i29pcn7LI8jsD8/export?format=csv&gid=39659398',
+            'Div_F': 'https://docs.google.com/spreadsheets/d/1wgPqLkxPnIgv7TxpppFxZ-_5p3AR8i29pcn7LI8jsD8/export?format=csv&gid=730642084',
+        }
+        filtered_data = {}
+
+        for sheet, url in sheet_urls.items():
+            # Fetch the CSV data from the hardcoded URL
+            df_sheet = pd.read_csv(url)
+
+            # Clean the column names
+            df_sheet.columns = df_sheet.columns.str.strip()
+
+            if 'Name' not in df_sheet.columns:
+                return render_template('error.html', message=f"Column 'Name' not found in sheet {sheet}")
+
+            filtered_data[sheet] = df_sheet[['Name']]
+        
+        return render_template('division_allocation.html', data=filtered_data)
+    except Exception as e:
+        logging.error(f"Error fetching Division Allocation data: {e}")
+        return render_template('error.html', message="Failed to load Division Allocation data.")
 
 
 @app.route('/api/players', methods=['GET'])
@@ -1231,6 +1261,7 @@ def get_players():
         return jsonify(player_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+    
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
