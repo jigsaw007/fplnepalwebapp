@@ -18,20 +18,32 @@
         }
 
         .card {
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
 
-        .card-header {
-            background-color: #007bff;
-            color: #fff;
-            border-radius: 10px 10px 0 0;
-        }
+.card-header {
+    background-color: #007bff;
+    color: #fff;
+    border-radius: 10px 10px 0 0;
+}
 
-        .card-body {
-            border-radius: 0 0 10px 10px;
-        }
+.card-body {
+    border-radius: 0 0 10px 10px;
+}
+
+.fixtures-table th, .fixtures-table td {
+    padding: 8px;
+    text-align: left;
+    border-bottom: 1px solid #ddd;
+    font-size: 14px;
+}
+
+.fixtures-table th {
+    background-color: #007bff;
+    color: #fff;
+}
 
         .team-logo {
             width: 30px;
@@ -419,6 +431,34 @@
     margin-bottom: 10px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
+.top-players-container {
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+    }
+    .player-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0 10px;
+    }
+    .player-photo {
+        width: 70px;
+        height: auto;
+        border-radius: 50%;
+        box-shadow: 2px 2px 8px grey;
+    }
+    .player-info {
+        text-align: center;
+        margin-top: 10px;
+    }
+    .player-name {
+        font-weight: bold;
+    }
+    .player-percent {
+        color: #555;
+        font-size: 0.9em;
+    }
         
     </style>
           {% endblock %}
@@ -463,8 +503,8 @@
         <!-- Captaincy suggestion will be populated here -->
     </div>
     <div class="card-footer text-right">
-        <button id="prev-button" class="btn btn-secondary"><i class="fa-solid fa-caret-left"></i></button>
-        <button id="next-button" class="btn btn-primary"><i class="fa-solid fa-caret-right"></i></button>
+        <button id="captain-prev-button" class="btn btn-secondary"><i class="fa-solid fa-caret-left"></i></button>
+        <button id="captain-next-button" class="btn btn-primary"><i class="fa-solid fa-caret-right"></i></button>
     </div>
 </div>
 
@@ -501,15 +541,25 @@
 
 
                 <!-- Fixtures Table -->
-                <div class="card">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        PL Fixtures
+                    </div>
                     <div class="card-body">
-                        <div class="fixtures-title">PL Results</div>
-                        <div class="table-responsive">
-                            <table class="table fixtures-table">
-                                <tbody id="fixtures-table-body">
-                                    <!-- Fixtures will be populated here -->
-                                </tbody>
-                            </table>
+                        <!-- Fixtures Table -->
+                        <div id="gameweek-container">
+                            <h3 id="gameweek-label">Gameweek 1</h3>
+                            <div class="table-responsive">
+                                <table class="table fixtures-table">
+                                    <tbody id="fixtures-table-body">
+                                        <!-- Fixtures will be populated here -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="text-right">
+                                <button id="fixtures-prev-button" class="btn btn-secondary">Previous</button>
+                                <button id="fixtures-next-button" class="btn btn-primary">Next</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -517,10 +567,10 @@
             <div class="col-md-6">
                 <div class="card mb-4">
                     <div class="card-header">
-                        Feature Player
+                        Top 3 Selected Players
                     </div>
-                    <div class="card-body" id="feature-player">
-                        <!-- Feature player details will be populated here -->
+                    <div class="card-body" id="top-players">
+                        <!-- Top players will be populated here -->
                     </div>
                 </div>
                 <!-- Weekly Squad Section -->
@@ -680,34 +730,6 @@
             $($(this).attr('href')).addClass('active');
         });
 
-        // Fetch fixtures and display in the table
-        $(document).ready(function() {
-            function loadFixtures() {
-                $.get('/api/fixtures', function(data) {
-                    let fixturesHtml = '';
-                    const currentEvent = getCurrentEvent();
-                    const currentFixtures = data.filter(fixture => fixture.event === currentEvent);
-                    currentFixtures.forEach(function(fixture) {
-                        const score = fixture.finished ? `${fixture.team_h_score} - ${fixture.team_a_score}` : 'vs';
-                        fixturesHtml += `
-                            <tr>
-                                <td>${fixture.home_team.short_name}</td>
-                                <td>${score}</td>
-                                <td>${fixture.away_team.short_name}</td>
-                            </tr>
-                        `;
-                    });
-                    $('#fixtures-table-body').html(fixturesHtml);
-                });
-            }
-
-            function getCurrentEvent() {
-                return 38; // Example current event
-            }
-
-            loadFixtures();
-        });
-
         $(document).ready(function() {
     // Fetch and display feature player
     $.get('/api/feature_player', function(data) {
@@ -789,6 +811,25 @@ if (!localStorage.getItem('popupShown')) {
         });
 });
 
+$(document).ready(function() {
+    // Fetch and display top 3 selected players
+    $.get('/api/top_players', function(data) {
+        let topPlayersHtml = `<div class="top-players-container">`;
+        data.forEach(function(player) {
+            topPlayersHtml += `
+                <div class="player-item">
+                    <img src="${player.photo}" alt="${player.name}" class="player-photo">
+                    <div class="player-info">
+                        <span class="player-name">${player.name}</span>
+                        <span class="player-percent">${player.selected_by_percent}% selected</span>
+                    </div>
+                </div>
+            `;
+        });
+        topPlayersHtml += `</div>`;
+        $('#top-players').html(topPlayersHtml);
+    });
+});
 
 $(document).ready(function() {
     // New Compare Players Button functionality
@@ -812,30 +853,66 @@ $(document).ready(function() {
             });
 
             function displayPlayer(index) {
-                const player = players[index];
-                $('#captaincy-suggestions').html(`
-                    <div class="player-card">
-                        <img src="${player.photo}" alt="${player.name}" class="img-thumbnail">
-                        <div class="player-info">
-                            <strong>${player.name}</strong>
-                            <span class="team-name">(${player.team})</span><br>
-                            Points/Game: ${player.points_per_game}<br>
-                            Form: ${player.form}
-                        </div>
-                    </div>
-                `);
-            }
+    const player = players[index];
+    $('#captaincy-suggestions').html(`
+        <div class="player-card">
+            <img src="${player.photo}" alt="${player.name}" class="img-thumbnail">
+            <div class="player-info">
+                <strong>${player.name}</strong>
+                <span class="team-name">(${player.team})</span><br>
+                Next Fixture: ${player.next_fixture}<br>
+                Cost: £${player.cost}m
+            </div>
+        </div>
+    `);
+}
 
-            $('#next-button').click(function() {
-                currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
-                displayPlayer(currentPlayerIndex);
-            });
+$('#captain-next-button').click(function() {
+    currentPlayerIndex = (currentPlayerIndex + 1) % players.length;
+    displayPlayer(currentPlayerIndex);
+});
 
-            $('#prev-button').click(function() {
-                currentPlayerIndex = (currentPlayerIndex - 1 + players.length) % players.length;
-                displayPlayer(currentPlayerIndex);
-            });
+$('#captain-prev-button').click(function() {
+    currentPlayerIndex = (currentPlayerIndex - 1 + players.length) % players.length;
+    displayPlayer(currentPlayerIndex);
+});
         });
+        let currentEvent = 1;
+
+function loadFixtures(event) {
+    $.get(`/api/fixtures/${event}`, function(data) {
+        let fixturesHtml = '';
+        data.forEach(function(fixture) {
+            const score = fixture.finished ? `${fixture.home_score} - ${fixture.away_score}` : 'vs';
+            fixturesHtml += `
+                <tr>
+                    <td>${fixture.home_team}</td>
+                    <td>${score}</td>
+                    <td>${fixture.away_team}</td>
+                </tr>
+            `;
+        });
+        $('#fixtures-table-body').html(fixturesHtml);
+        $('#gameweek-label').text(`Gameweek ${event}`);
+    });
+}
+
+$('#fixtures-next-button').click(function() {
+    if (currentEvent < 38) {  // Ensure we don't exceed Gameweek 38
+        currentEvent++;
+        loadFixtures(currentEvent);
+    }
+});
+
+$('#fixtures-prev-button').click(function() {
+    if (currentEvent > 1) {  // Ensure we don't go below Gameweek 1
+        currentEvent--;
+        loadFixtures(currentEvent);
+    }
+});
+
+// Initial load for Gameweek 1
+loadFixtures(currentEvent);
 
 
     </script>
