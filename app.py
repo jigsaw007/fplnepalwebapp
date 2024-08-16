@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request,Response
 import requests
 import logging
 from collections import defaultdict
@@ -6,6 +6,7 @@ from collections import Counter
 from datetime import datetime
 import pandas as pd
 import io
+import urllib.parse
 
 app = Flask(__name__, template_folder='templates')
 
@@ -47,6 +48,16 @@ def fetch_google_sheet_data(url):
     data = response.content.decode('utf-8')
     df = pd.read_csv(io.StringIO(data))
     return df
+
+@app.route('/api/top_players', methods=['GET'])
+def get_top_players():
+    top_players = sorted(players, key=lambda x: float(x['selected_by_percent']), reverse=True)[:3]
+    result = [{
+        'name': player['web_name'],
+        'selected_by_percent': player['selected_by_percent'],
+        'photo': f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{player['photo'].replace('.jpg', '')}.png"
+    } for player in top_players]
+    return jsonify(result)
 
 @app.route('/api/teams')
 def get_teams():
@@ -145,11 +156,18 @@ def enter_id_page():
 @app.route('/api/weekly_squad', methods=['GET'])
 def get_weekly_squad():
     try:
+        # Adjust gameweek range for the current season
+        current_season_gameweeks = range(1, 6)  # Example: Adjust this to the relevant gameweek range
+        
         gameweek_data = []
-        for event_id in range(34, 39):  # Last 5 gameweeks
+        for event_id in current_season_gameweeks:
             response = requests.get(f"{BASE_URL}event/{event_id}/live/")
-            response.raise_for_status()
-            gameweek_data.append(response.json())
+            if response.status_code == 200:
+                gameweek_data.append(response.json())
+
+        # If no gameweek data is found, return a message
+        if not gameweek_data:
+            return jsonify({"error": "Feature squad will be available after GW1."}), 404
 
         player_scores = defaultdict(int)
         player_costs = {}
@@ -522,6 +540,28 @@ def get_all_leagues_data():
     except requests.exceptions.RequestException as e:
         app.logger.error(f"Error fetching league data: {e}")
         return jsonify({"error": "Failed to fetch league data"}), 500
+    
+@app.route('/api/fixtures/<int:event>', methods=['GET'])
+def get_fixtures_for_event(event):
+    try:
+        response = requests.get(f"{FIXTURES_URL}?event={event}")
+        response.raise_for_status()
+        fixtures = response.json()
+
+        fixture_list = [{
+            'home_team': teams[fixture['team_h']],
+            'away_team': teams[fixture['team_a']],
+            'home_score': fixture.get('team_h_score'),
+            'away_score': fixture.get('team_a_score'),
+            'finished': fixture['finished'],
+            'event': fixture['event']
+        } for fixture in fixtures]
+
+        return jsonify(fixture_list)
+
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Error fetching fixtures for event {event}: {e}")
+        return jsonify({"error": "Failed to fetch fixtures"}), 500
 
 @app.route('/api/highest_scorers/<int:gameweek>', methods=['GET'])
 def get_highest_scorers(gameweek):
@@ -1100,36 +1140,50 @@ def get_bootstrap_static_data():
     response.raise_for_status()
     return response.json()
 
-def calculate_captaincy_suggestions():
-    data = get_bootstrap_static_data()
-    players = data['elements']
-    teams = {team['id']: team['name'] for team in data['teams']}
-
-    player_scores = [
-        {
-            'id': player['id'],
-            'name': player['web_name'],
-            'team': teams[player['team']],
-            'total_points': player['total_points'],
-            'points_per_game': player['points_per_game'],
-            'form': player['form'],
-            'photo': f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{player['photo'].replace('.jpg', '')}.png"
-        }
-        for player in players
-    ]
-
-    # Sort players by form and total points
-    player_scores.sort(key=lambda x: (float(x['form']), -float(x['total_points'])), reverse=True)
-
-    # Select the top 3 players as captaincy suggestions
-    captaincy_suggestions = player_scores[:3]
-    return captaincy_suggestions
-
 @app.route('/api/captaincy_suggestions', methods=['GET'])
-def captaincy_suggestions():
+def get_captaincy_suggestions():
     try:
-        suggestions = calculate_captaincy_suggestions()
-        return jsonify(suggestions)
+        # Fetch the upcoming fixtures
+        fixtures = requests.get(FIXTURES_URL).json()
+
+        def get_next_fixture(player_team_id):
+            for fixture in fixtures:
+                if fixture['team_h'] == player_team_id:
+                    opponent_id = fixture['team_a']
+                    return f"{teams[opponent_id]} (Home)"
+                elif fixture['team_a'] == player_team_id:
+                    opponent_id = fixture['team_h']
+                    return f"{teams[opponent_id]} (Away)"
+
+        def captaincy_score(player):
+            score = (float(player['points_per_game']) * 0.4 +
+                     float(player['form']) * 0.3 +
+                     float(player['goals_scored']) * 0.15 +
+                     float(player['assists']) * 0.1 +
+                     float(player['expected_goal_involvements_per_90']) * 0.05)
+            return score
+
+        # Calculate scores for all players
+        player_scores = [
+            {
+                'id': player['id'],
+                'name': player['web_name'],
+                'team': teams[player['team']],
+                'cost': player['now_cost'] / 10.0,
+                'next_fixture': get_next_fixture(player['team']),
+                'photo': f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{player['photo'].replace('.jpg', '')}.png",
+                'captaincy_score': captaincy_score(player)
+            }
+            for player in players
+        ]
+
+        # Sort players by captaincy score
+        player_scores.sort(key=lambda x: x['captaincy_score'], reverse=True)
+
+        # Select the top 3 players as captaincy suggestions
+        captaincy_suggestions = player_scores[:3]
+        return jsonify(captaincy_suggestions)
+
     except Exception as e:
         logging.error(f"Error fetching captaincy suggestions: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -1162,6 +1216,7 @@ def get_player_data():
 @app.route('/prediction')
 def prediction_page():
     return render_template('prediction.html')
+
 
 @app.route('/api/players', methods=['GET'])
 def get_players():
