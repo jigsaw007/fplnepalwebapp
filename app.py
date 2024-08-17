@@ -244,7 +244,7 @@ def fetch_all_pages(url_template, key):
 @app.route('/api/classic-standings-full', methods=['GET'])
 def get_classic_standings_full():
     try:
-        url_template = "https://fantasy.premierleague.com/api/leagues-classic/604351/standings/?page_new_entries=1&page_standings={page}&phase=1"
+        url_template = "https://fantasy.premierleague.com/api/leagues-classic/420585/standings/?page_new_entries=1&page_standings={page}&phase=1"
         standings = fetch_all_pages(url_template, 'results')
         classic_standings = [
             {"rank": entry['rank'], "entry_name": entry['entry_name'], "player_name": entry['player_name'], "total": entry['total']}
@@ -257,7 +257,7 @@ def get_classic_standings_full():
 @app.route('/api/ultimate-standings-full', methods=['GET'])
 def get_ultimate_standings_full():
     try:
-        url_template = "https://fantasy.premierleague.com/api/leagues-classic/345282/standings/?page_new_entries=1&page_standings={page}&phase=1"
+        url_template = "https://fantasy.premierleague.com/api/leagues-classic/420581/standings/?page_new_entries=1&page_standings={page}&phase=1"
         standings = fetch_all_pages(url_template, 'results')
         ultimate_standings = [
             {"rank": entry['rank'], "entry_name": entry['entry_name'], "player_name": entry['player_name'], "total": entry['total']}
