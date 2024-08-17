@@ -1262,6 +1262,29 @@ def get_players():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
+@app.route('/api/top_transfers_in', methods=['GET'])
+def get_top_transfers_in():
+    # Fetch top 5 transfers in
+    top_transfers_in = sorted(players, key=lambda x: x['transfers_in_event'], reverse=True)[:5]
+    result = [{
+        'name': player['web_name'],
+        'team': teams[player['team']],
+        'transfers': player['transfers_in_event'],
+        'position': element_types[player['element_type']]
+    } for player in top_transfers_in]
+    return jsonify(result)
+
+@app.route('/api/top_transfers_out', methods=['GET'])
+def get_top_transfers_out():
+    # Fetch top 5 transfers out
+    top_transfers_out = sorted(players, key=lambda x: x['transfers_out_event'], reverse=True)[:5]
+    result = [{
+        'name': player['web_name'],
+        'team': teams[player['team']],
+        'transfers': player['transfers_out_event'],
+        'position': element_types[player['element_type']]
+    } for player in top_transfers_out]
+    return jsonify(result)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

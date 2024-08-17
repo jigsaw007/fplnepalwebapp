@@ -537,6 +537,46 @@
     .card-footer button {
                 margin-left: 10px;
             }
+            <style>
+.top-transfer-item {
+    padding: 5px 10px;
+    background-color: #f5f5f5;
+    margin-bottom: 5px;
+    border-radius: 5px;
+    font-size: 14px; /* Reduce font size */
+}
+
+.top-transfer-count {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 5px;
+    font-size: 14px; /* Reduce font size */
+    padding: 5px 10px;
+    border-radius: 5px;
+    background-color: #f5f5f5;
+}
+
+.top-transfer .card-header {
+    background-color: #3c005a;
+    color: white;
+    text-align: center;
+}
+
+.top-transfer .card-body {
+    background-color: #fff;
+    padding: 10px;
+}
+
+.top-transfer .badge-primary {
+    background-color: #00971a;
+}
+
+.top-transfer .badge-danger {
+    background-color: #cc0000;
+}
+</style>
+
 </style>
 
 
@@ -573,6 +613,38 @@
                         <!-- Top players will be populated here -->
                     </div>
                 </div>
+                <div class="card mb-4 top-transfer">
+                    <div class="card-header">
+                        Top Transfers in this Gameweek <i class="fa-solid fa-arrow-up"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6" id="top-transfers-in">
+                                <!-- Top transfers in will be populated here -->
+                            </div>
+                            <div class="col-6" id="top-transfers-in-count">
+                                <!-- Top transfers in counts will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card mb-4 top-transfer">
+                    <div class="card-header">
+                        Top Transfers out this Gameweek <i class="fa-solid fa-arrow-down"></i>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-6" id="top-transfers-out">
+                                <!-- Top transfers out will be populated here -->
+                            </div>
+                            <div class="col-6" id="top-transfers-out-count">
+                                <!-- Top transfers out counts will be populated here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Weekly Squad Section -->
                 <div class="card mb-4">
                     <div class="card-header">
@@ -913,6 +985,49 @@ $('#fixtures-prev-button').click(function() {
 
 // Initial load for Gameweek 1
 loadFixtures(currentEvent);
+
+$(document).ready(function() {
+    // Fetch and display top transfers in
+    $.get('/api/top_transfers_in', function(data) {
+        let topTransfersInHtml = '';
+        let topTransfersInCountHtml = '';
+        data.forEach(function(player) {
+            topTransfersInHtml += `
+                <div class="top-transfer-item">
+                    ${player.name} (${player.team}) - ${player.position}
+                </div>
+            `;
+            topTransfersInCountHtml += `
+                <div class="top-transfer-count badge badge-primary badge-pill">
+                    ${player.transfers}
+                </div>
+            `;
+        });
+        $('#top-transfers-in').html(topTransfersInHtml);
+        $('#top-transfers-in-count').html(topTransfersInCountHtml);
+    });
+
+    // Fetch and display top transfers out
+    $.get('/api/top_transfers_out', function(data) {
+        let topTransfersOutHtml = '';
+        let topTransfersOutCountHtml = '';
+        data.forEach(function(player) {
+            topTransfersOutHtml += `
+                <div class="top-transfer-item">
+                    ${player.name} (${player.team}) - ${player.position}
+                </div>
+            `;
+            topTransfersOutCountHtml += `
+                <div class="top-transfer-count badge badge-danger badge-pill">
+                    ${player.transfers}
+                </div>
+            `;
+        });
+        $('#top-transfers-out').html(topTransfersOutHtml);
+        $('#top-transfers-out-count').html(topTransfersOutCountHtml);
+    });
+});
+
 
 
     </script>
