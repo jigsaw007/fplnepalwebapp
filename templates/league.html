@@ -11,278 +11,227 @@
         }
         .content-wrapper {
             display: flex;
-            flex-direction: row;
-            justify-content: space-between;
+            flex-direction: column;
+            gap: 15px; /* Add some space between sections */
         }
-        .main-content {
+        .highest-scorers-section {
+            background-color: #ffffff;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .highest-scorer-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px; /* Space between scorer boxes */
+        }
+        .highest-scorer-box {
             flex: 1;
-            margin-right: 15px;
+            min-width: 250px; /* Minimum width for each box */
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .highest-scorer-box h4 {
+            margin-bottom: 10px;
+        }
+        .table-section {
             background-color: #ffffff;
             padding: 20px;
             box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
             border-radius: 10px;
         }
-        .sidebar {
-            width: 300px;
-            padding: 20px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-            border-radius: 10px;
-            background-color: #ffffff;
+        .table-container {
+            overflow-x: auto;
         }
-/* Ensure the container is scrollable horizontally */
-.table-container {
-    overflow-x: auto;
-}
-
-/* Adjust table and cell styles to improve responsiveness */
-.table {
-    width: 100%;
-    table-layout: auto;
-}
-
-.table th, .table td {
-    padding: 6px 8px; /* Adjust padding to fit content */
-    white-space: nowrap; /* Prevent text wrapping in cells */
-}
-
-/* Ensure sidebar and main content do not overlap */
-.content-wrapper {
-    display: flex;
-    flex-direction: column;
-}
-
-
+        .table {
+            width: 100%;
+            table-layout: auto;
+        }
         .thead-dark th {
             background-color: #007bff;
             color: #fff;
         }
-        .thead-dark th.rank-col {
-            width: 50px;
-        }
-        .thead-dark th.points-col {
-            width: 80px;
-        }
-        .thead-dark th.name-col {
-            width: 200px;
-        }
-        .thead-dark th.matches-played-col,
-        .thead-dark th.matches-won-col,
-        .thead-dark th.matches-drawn-col,
-        .thead-dark th.matches-lost-col {
-            width: 60px;
-        }
-        .player-name {
-            font-size: 0.85rem;
-            color: #555;
-        }
         .trophy-icon {
             color: gold;
-            margin-left: 5px;
+            font-size: 1.2em; /* Adjust size if needed */
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2); /* Optional shadow for more emphasis */
         }
-        .clearfix::after {
-            content: "";
-            clear: both;
-            display: table;
-        }
-        .dataTables_paginate .paginate_button {
-            padding: 0.5rem 0.75rem;
-            margin-left: 0.25rem;
-            border-radius: 0.25rem;
-            background-color: #4fed73;
-            color: #fff !important;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-            transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
-        }
-        .dataTables_paginate .paginate_button:hover {
-            background-color: #3cbf5a;
-            color: #fff !important;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
-        .dataTables_paginate .paginate_button.current {
-            background-color: #3cbf5a;
-            color: #fff !important;
-        }
-        .dataTables_wrapper .dataTables_filter {
-            display: none;
-        }
-        .dataTables_wrapper .dataTables_length {
-            display: none;
-        }
-        .row {
-            display: flex;
-            flex-wrap: wrap;
-        }
-        .col-md-6 {
-            flex: 0 0 50%;
-            max-width: 50%;
-            padding: 15px;
-        }
-        h3 {
-            text-align: center;
-            font-weight: bold;
-            margin-bottom: 20px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .btn-primary {
-            background-color: var(--button-bg-color);
-            border-color: var(--button-bg-color);
-            color: var(--button-text-color);
-        }
-        @media (min-width: 768px) {
-    .content-wrapper {
-        flex-direction: row;
-    }
-    .main-content {
-        flex: 1;
-        margin-right: 15px;
-    }
-    .sidebar {
-        width: 300px;
-        margin-left: auto;
-    }
+/* Target the DataTables pagination buttons */
+.dataTables_paginate .paginate_button {
+    background: linear-gradient(45deg, #ff007f, #ff4081);
+    border: none;
+    color: white !important;
+    padding: 8px 16px;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    font-size: 14px;
+    border-radius: 5px;
+    transition: background 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+    margin: 0 5px;
+}
+
+/* Hover effect */
+.dataTables_paginate .paginate_button:hover {
+    background: linear-gradient(45deg, #e60073, #ff66a3);
+    box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+/* Active state (when button is clicked) */
+.dataTables_paginate .paginate_button:active {
+    background: linear-gradient(45deg, #cc005f, #e60073);
+    box-shadow: none;
+}
+
+/* Disabled state */
+.dataTables_paginate .paginate_button.disabled {
+    background: #cccccc;
+    color: #666666 !important;
+    cursor: not-allowed;
+}
+
+/* Focus state */
+.dataTables_paginate .paginate_button:focus {
+    outline: none;
+    box-shadow: 0px 0px 5px rgba(255, 0, 127, 0.5);
 }
     </style>
-                {% endblock %}
-    
-                {% block content %}
+{% endblock %}
 
-
-    <div class="container-fluid content-wrapper">
-        <div class="main-content">
-            <div id="league-tables" class="row">
-                <!-- League tables will be populated here -->
-            </div>
+{% block content %}
+<div class="container-fluid content-wrapper">
+    <!-- Highest Gameweek Scorers Section -->
+    <div class="highest-scorers-section">
+        <h3>Highest Gameweek Scorers</h3>
+        <div class="form-group">
+            <label for="gameweek-select">Select Gameweek:</label>
+            <select class="form-control" id="gameweek-select">
+                <!-- Gameweek options will be populated here -->
+            </select>
         </div>
-        <div class="sidebar">
-            <h3>Highest Gameweek Scorers</h3>
-            <div class="form-group">
-                <label for="gameweek-select">Select Gameweek:</label>
-                <select class="form-control" id="gameweek-select">
-                    <!-- Gameweek options will be populated here -->
-                </select>
-            </div>
-            <div id="highest-scorers">
-                <!-- Highest scorers will be populated here -->
-            </div>
+        <div id="highest-scorers" class="highest-scorer-container">
+            <!-- Highest scorers will be populated here -->
         </div>
     </div>
-    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    
+    <!-- League Tables Section -->
+    <div class="table-section">
+        <div id="league-tables" class="row">
+            <!-- League tables will be populated here -->
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
 <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>
 
-    <script>
-        $(document).ready(function() {
-            function loadLeagueData() {
-                $.get('/api/leagues', function(data) {
-                    if (data) {
-                        const leagueTablesContainer = $('#league-tables');
-                        leagueTablesContainer.empty();
+<script>
+    $(document).ready(function() {
+        function loadLeagueData() {
+            $.get('/api/leagues', function(data) {
+                if (data) {
+                    const leagueTablesContainer = $('#league-tables');
+                    leagueTablesContainer.empty();
 
-                        for (const [leagueName, leagueData] of Object.entries(data)) {
-                            if (leagueData.standings && leagueData.standings.results) {
-                                const standings = leagueData.standings.results;
-                                const tableId = `league-table-${leagueName.replace(' ', '-')}`;
-                                const tableHtml = `
-                                    <div class="col-md-6 table-container">
-                                        <h3>${leagueName}</h3>
-                                        <table class="table table-striped table-bordered" id="${tableId}">
-                                            <thead class="thead-dark">
+                    for (const [leagueName, leagueData] of Object.entries(data)) {
+                        if (leagueData.standings && leagueData.standings.results) {
+                            const standings = leagueData.standings.results;
+                            const tableId = `league-table-${leagueName.replace(' ', '-')}`;
+                            const tableHtml = `
+                                <div class="col-md-12 table-container">
+                                    <h3>${leagueName}</h3>
+                                    <table class="table table-striped table-bordered" id="${tableId}">
+                                        <thead class="thead-dark">
+                                            <tr>
+                                                <th class="rank-col">Rank</th>
+                                                <th class="name-col">Name</th>
+                                                <th class="matches-played-col">MP</th>
+                                                <th class="matches-won-col">W</th>
+                                                <th class="matches-drawn-col">D</th>
+                                                <th class="matches-lost-col">L</th>
+                                                <th class="points-col">Total Points</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            ${standings.map(entry => `
                                                 <tr>
-                                                    <th class="rank-col">Rank</th>
-                                                    <th class="name-col">Name</th>
-                                                    <th class="matches-played-col">MP</th>
-                                                    <th class="matches-won-col">W</th>
-                                                    <th class="matches-drawn-col">D</th>
-                                                    <th class="matches-lost-col">L</th>
-                                                    <th class="points-col">Total Points</th>
+                                                    <td>${entry.rank || ''}</td>
+                                                    <td>
+                                                        ${entry.entry_name || ''}
+                                                        ${entry.rank === 1 ? '<i class="fas fa-trophy trophy-icon"></i>' : ''}
+                                                        <div class="player-name">${entry.player_name || ''}</div>
+                                                    </td>
+                                                    <td>${entry.matches_played || ''}</td>
+                                                    <td>${entry.matches_won || ''}</td>
+                                                    <td>${entry.matches_drawn || ''}</td>
+                                                    <td>${entry.matches_lost || ''}</td>
+                                                    <td>${entry.total || ''}</td>
                                                 </tr>
-                                            </thead>
-                                            <tbody>
-                                                ${standings.map(entry => `
-                                                    <tr>
-                                                        <td>${entry.rank || ''}</td>
-                                                        
-                                                        <td>
-                                                            ${entry.entry_name || ''}
-                                                            ${entry.rank === 1 ? '<i class="fas fa-trophy trophy-icon"></i>' : ''}
-                                                            <div class="player-name">${entry.player_name || ''}</div>
-                                                        </td>
-                                                        <td>${entry.matches_played || ''}</td>
-                                                        <td>${entry.matches_won || ''}</td>
-                                                        <td>${entry.matches_drawn || ''}</td>
-                                                        <td>${entry.matches_lost || ''}</td>
-                                                        <td>${entry.total || ''}</td>
-                                                    </tr>
-                                                `).join('')}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                `;
-                                leagueTablesContainer.append(tableHtml);
-                                $(`#${tableId}`).DataTable({
-                                    "pageLength": 12,
-                                    "searching": false,
-                                    "ordering": false,
-                                    "pagingType": "simple"
-                                });
-                            }
+                                            `).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            `;
+                            leagueTablesContainer.append(tableHtml);
+                            $(`#${tableId}`).DataTable({
+                                "pageLength": 12,
+                                "searching": false,
+                                "ordering": false,
+                                "pagingType": "simple"
+                            });
                         }
-                    } else {
-                        console.error("No league data found");
                     }
-                });
-            }
-
-            function loadGameweekOptions() {
-                const gameweeks = Array.from({length: 38}, (_, i) => i + 1);
-                const gameweekSelect = $('#gameweek-select');
-                gameweeks.forEach(gameweek => {
-                    gameweekSelect.append(`<option value="${gameweek}">Gameweek ${gameweek}</option>`);
-                });
-            }
-            function loadHighestScorers(gameweek) {
-    $.get(`/api/highest_scorers/${gameweek}`, function(data) {
-        const highestScorersContainer = $('#highest-scorers');
-        highestScorersContainer.empty();
-
-        for (const [leagueName, details] of Object.entries(data)) {
-            const leagueHtml = `
-                <div class="highest-scorer-box">
-                    <h4>${leagueName}</h4>
-                    <p><strong>Highest Score:</strong> ${details.score} points</p>
-                    <ul class="list-group">
-                        ${details.players.map(player => `
-                            <li class="list-group-item">
-                                ${player}
-                            </li>
-                        `).join('')}
-                    </ul>
-                </div>
-            `;
-            highestScorersContainer.append(leagueHtml);
+                } else {
+                    console.error("No league data found");
+                }
+            });
         }
-    });
-}
 
-// Event listener for gameweek selection
-$('#gameweek-select').change(function() {
-    const selectedGameweek = $(this).val();
-    loadHighestScorers(selectedGameweek);
-});
+        function loadGameweekOptions() {
+            const gameweeks = Array.from({length: 38}, (_, i) => i + 1);
+            const gameweekSelect = $('#gameweek-select');
+            gameweeks.forEach(gameweek => {
+                gameweekSelect.append(`<option value="${gameweek}">Gameweek ${gameweek}</option>`);
+            });
+        }
 
-// Event listener for gameweek selection
-$('#gameweek-select').change(function() {
-    const selectedGameweek = $(this).val();
-    loadHighestScorers(selectedGameweek);
-});
+        function loadHighestScorers(gameweek) {
+            $.get(`/api/highest_scorers/${gameweek}`, function(data) {
+                const highestScorersContainer = $('#highest-scorers');
+                highestScorersContainer.empty();
 
-            loadLeagueData();
-            loadGameweekOptions();
-            loadHighestScorers(1); // Load highest scorers for gameweek 1 by default
+                for (const [leagueName, details] of Object.entries(data)) {
+                    const leagueHtml = `
+                        <div class="highest-scorer-box">
+                            <h4>${leagueName}</h4>
+                            <p><strong>Highest Score:</strong> ${details.score} points</p>
+                            <ul class="list-group">
+                                ${details.players.map(player => `
+                                    <li class="list-group-item">
+                                        ${player}
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    `;
+                    highestScorersContainer.append(leagueHtml);
+                }
+            });
+        }
+
+        $('#gameweek-select').change(function() {
+            const selectedGameweek = $(this).val();
+            loadHighestScorers(selectedGameweek);
         });
-    </script>
-</body>
-</html>
+
+        loadLeagueData();
+        loadGameweekOptions();
+        loadHighestScorers(1); // Load highest scorers for gameweek 1 by default
+    });
+</script>
 {% endblock %}
