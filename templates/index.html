@@ -459,6 +459,47 @@
         color: #555;
         font-size: 0.9em;
     }
+    .highest-scorers-section {
+            background-color: #ffffff;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .highest-scorer-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 150px;
+            text-align: center;
+            font-size: 1.2em;
+        }
+
+        .pagination-button {
+            background: linear-gradient(45deg, #ff007f, #ff4081);
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 14px;
+            border-radius: 5px;
+            transition: background 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            margin: 5px;
+        }
+
+        .pagination-button:hover {
+            background: linear-gradient(45deg, #e60073, #ff66a3);
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .pagination-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+        }
         
     </style>
           {% endblock %}
@@ -662,7 +703,7 @@
             </div>
             <div class="col-md-3">
                 <!-- Sidebar for league standings -->
-                <div class="card">
+                <div class="card mb-4">
                     <div class="leaderboard-header">FPL NEPAL Standings<br>(Top10)</div>
                     <div class="tabs">
                         <a href="#tab-classic" class="active">Classic</a>
@@ -673,6 +714,24 @@
                     </div>
                     <div id="tab-ultimate" class="tab-content">
                         <div id="ultimate-standings"></div>
+                    </div>
+                </div>
+            
+                <!-- Highest Gameweek Scorers Section -->
+                <div class="card highest-scorers-section">
+                    <div class="leaderboard-header">Highest Gameweek Scorers</div>
+                    <div class="form-group">
+                        <label for="gameweek-select">Select Gameweek:</label>
+                        <select class="form-control" id="gameweek-select">
+                            <!-- Gameweek options will be populated here -->
+                        </select>
+                    </div>
+                    <div id="highest-scorer-content" class="highest-scorer-container">
+                        <!-- Highest scorers will be displayed here -->
+                    </div>
+                    <div class="text-center mt-3">
+                        <button id="prev-division" class="pagination-button">Previous</button>
+                        <button id="next-division" class="pagination-button">Next</button>
                     </div>
                 </div>
             </div>
@@ -1028,7 +1087,71 @@ $(document).ready(function() {
     });
 });
 
+$(document).ready(function() {
+        let currentDivisionIndex = 0;
+        let divisions = []; // This will hold the division data
 
+        function loadGameweekOptions() {
+            const gameweeks = Array.from({length: 38}, (_, i) => i + 1);
+            const gameweekSelect = $('#gameweek-select');
+            gameweeks.forEach(gameweek => {
+                gameweekSelect.append(`<option value="${gameweek}">Gameweek ${gameweek}</option>`);
+            });
+        }
+
+        function loadHighestScorers(gameweek) {
+            $.get(`/api/highest_scorers/${gameweek}`, function(data) {
+                divisions = Object.entries(data); // Store divisions
+                currentDivisionIndex = 0; // Reset to the first division
+                displayCurrentDivision();
+            });
+        }
+
+        function displayCurrentDivision() {
+            const [divisionName, details] = divisions[currentDivisionIndex];
+            const highestScorersContainer = $('#highest-scorer-content');
+            highestScorersContainer.html(`
+                <div class="highest-scorer-box">
+                    <h4>${divisionName}</h4>
+                    <p><strong>Highest Score:</strong> ${details.score} points</p>
+                    <ul class="list-group">
+                        ${details.players.map(player => `
+                            <li class="list-group-item">
+                                ${player}
+                            </li>
+                        `).join('')}
+                    </ul>
+                </div>
+            `);
+
+            // Enable/disable buttons based on the current division
+            $('#prev-division').prop('disabled', currentDivisionIndex === 0);
+            $('#next-division').prop('disabled', currentDivisionIndex === divisions.length - 1);
+        }
+
+        // Button event listeners
+        $('#prev-division').click(function() {
+            if (currentDivisionIndex > 0) {
+                currentDivisionIndex--;
+                displayCurrentDivision();
+            }
+        });
+
+        $('#next-division').click(function() {
+            if (currentDivisionIndex < divisions.length - 1) {
+                currentDivisionIndex++;
+                displayCurrentDivision();
+            }
+        });
+
+        $('#gameweek-select').change(function() {
+            const selectedGameweek = $(this).val();
+            loadHighestScorers(selectedGameweek);
+        });
+
+        loadGameweekOptions();
+        loadHighestScorers(1); // Load highest scorers for gameweek 1 by default
+    });
 
     </script>
 {% endblock %}
