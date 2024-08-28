@@ -500,6 +500,48 @@
             background: #cccccc;
             cursor: not-allowed;
         }
+        #player-status-section .top-players-container {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+#player-status-section .player-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 0 10px;
+    text-align: center;
+}
+
+#player-status-section .player-card img {
+    width: 70px;
+    height: auto;
+    border-radius: 50%;
+    box-shadow: 2px 2px 8px grey;
+}
+
+#player-status-section .player-info {
+    margin-top: 10px;
+}
+
+#player-status-section .player-name {
+    font-weight: bold;
+    font-size: 1em;
+    margin-top: 5px;
+}
+
+#player-status-section .player-status {
+    margin-top: 5px;
+    font-size: 1.1em;
+}
+
+#player-status-section .player-news {
+    margin-top: 5px;
+    color: #555;
+}
+
         
     </style>
           {% endblock %}
@@ -686,6 +728,24 @@
                     </div>
                 </div>
 
+                <div class="card mb-4">
+                    <div class="card-header">
+                        Injuries & Suspensions
+                    </div>
+                    <div class="card-body">
+                        <div id="player-status-section">
+                            <div id="player-status" class="top-players-container">
+                                <!-- Player injuries and suspensions will be populated here -->
+                            </div>
+                        </div>
+                        <div class="pagination-controls text-center mt-3">
+                            <button id="previous-button" class="btn btn-secondary">Previous</button>
+                            <button id="next-button" class="btn btn-primary">Next</button>
+                        </div>
+                    </div>
+                </div>
+                
+
                 <!-- Weekly Squad Section -->
                 <div class="card mb-4">
                     <div class="card-header">
@@ -695,9 +755,9 @@
                         <div id="weekly-squad" class="formation">
                             <!-- Weekly squad details will be populated here -->
                         </div>
-                        <div id="weekly-bench-container" class="bench-container">
+                        <!--<div id="weekly-bench-container" class="bench-container">-->
                             <!-- Bench details will be populated here -->
-                        </div>
+                        <!--</div>-->
                     </div>
                 </div>
             </div>
@@ -1151,6 +1211,80 @@ $(document).ready(function() {
         loadGameweekOptions();
         loadHighestScorers(1); // Load highest scorers for gameweek 1 by default
     });
+
+    $(document).ready(function() {
+    let currentPage = 1;
+    const playersPerPage = 3; // Adjust based on your needs
+    let playerData = [];
+
+    // Function to map status to Font Awesome icons
+    function getStatusIcon(status) {
+        switch (status) {
+            case 'i': // Injured
+                return '<i class="fas fa-user-injured" style="color: red; font-size: 20px;"></i>';
+            case 'd': // Doubtful
+                return '<i class="fas fa-exclamation-triangle" style="color: orange; font-size: 20px;"></i>';
+            case 's': // Suspended
+                return '<i class="fas fa-ban" style="color: red; font-size: 20px;"></i>';
+            case 'u': // Unavailable
+                return '<i class="fas fa-user-times" style="color: gray; font-size: 20px;"></i>';
+            default:
+                return '';
+        }
+    }
+
+    // Function to display players based on the current page
+    function displayPlayers() {
+        const startIndex = (currentPage - 1) * playersPerPage;
+        const endIndex = startIndex + playersPerPage;
+        const playersToShow = playerData.slice(startIndex, endIndex);
+        let statusHtml = '';
+
+        playersToShow.forEach(function(player) {
+            const statusIcon = getStatusIcon(player.status);
+            statusHtml += `
+                <div class="player-card">
+                    <img src="${player.photo}" alt="${player.name}">
+                    <div class="player-info">
+                        <div class="player-name">${player.name}</div>
+                        <div class="player-status">${statusIcon}</div>
+                        <div class="player-news">${player.news}</div>
+                    </div>
+                </div>
+            `;
+        });
+
+        $('#player-status').html(statusHtml);
+        updateButtons();
+    }
+
+    // Function to update the Next and Previous buttons' visibility
+    function updateButtons() {
+        $('#previous-button').prop('disabled', currentPage === 1);
+        $('#next-button').prop('disabled', currentPage === Math.ceil(playerData.length / playersPerPage));
+    }
+
+    // Fetch player data and initialize the display
+    $.get('/api/player_status', function(data) {
+        playerData = data;
+        displayPlayers();
+    });
+
+    // Event listeners for pagination buttons
+    $('#next-button').click(function() {
+        if (currentPage < Math.ceil(playerData.length / playersPerPage)) {
+            currentPage++;
+            displayPlayers();
+        }
+    });
+
+    $('#previous-button').click(function() {
+        if (currentPage > 1) {
+            currentPage--;
+            displayPlayers();
+        }
+    });
+});
 
     </script>
 {% endblock %}
