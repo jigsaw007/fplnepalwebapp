@@ -1286,5 +1286,21 @@ def get_top_transfers_out():
     } for player in top_transfers_out]
     return jsonify(result)
 
+@app.route('/api/player_status', methods=['GET'])
+def get_player_status():
+    player_status_list = []
+    
+    for player in players:
+        if player['status'] in ['i', 'd', 's', 'u']:  # injured, doubtful, suspended, unavailable
+            player_status = {
+                'name': player['web_name'],
+                'status': player['status'],
+                'news': player['news'],
+                'photo': f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{player['photo'].replace('.jpg', '')}.png"
+            }
+            player_status_list.append(player_status)
+    
+    return jsonify(player_status_list)
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
