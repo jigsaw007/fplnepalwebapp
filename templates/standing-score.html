@@ -8,8 +8,8 @@
 <div class="container mt-4">
     <h2>Manager Standings</h2>
 
-    <!-- Loader -->
-    <div id="loader" class="text-center" style="display:none;">
+    <!-- Loader (Spinner) -->
+    <div id="loader" class="loader-container">
         <div class="spinner-border text-primary" role="status">
             <span class="sr-only">Loading...</span>
         </div>
@@ -27,41 +27,108 @@
     </div>
 
     <!-- Standings Table -->
-    <table id="standings-table" class="table table-striped">
-        <thead>
-            <tr>
-                <th>SN</th>
-                <th>Manager Name</th>
-                <th>Gameweek {{ selected_gameweek }} Score</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for entry in data %}
-            <tr>
-                <td>{{ loop.index }}</td>
-                <td>{{ entry['player_name'] }}</td>
-                <td>{{ entry['gameweek_score'] }}</td>
-            </tr>
+    <div id="content-container" class="content-container">
+        <table id="standings-table" class="table table-striped">
+            <thead>
+                <tr>
+                    <th>SN</th>
+                    <th>Manager Name</th>
+                    <th>Gameweek {{ selected_gameweek }} Score</th>
+                    <th>Team Value</th>
+                    <th>Rank</th>
+                    <th>Overall Rank</th>
+                    <th>Bank</th>
+                    <th>Value</th>
+                    <th>Transfers</th>
+                    <th>Transfers Cost</th>
+                    <th>Points on Bench</th>
+                    <th>Chips Used</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in data %}
+                <tr>
+                    <td>{{ loop.index + (current_page - 1) * items_per_page }}</td> <!-- Adjust SN for pagination -->
+                    <td>{{ entry['player_name'] }}</td>
+                    <td>{{ entry['gameweek_score'] }}</td>
+                    <td>{{ entry['team_value'] }}</td>
+                    <td>{{ entry['rank'] }}</td>
+                    <td>{{ entry['overall_rank'] }}</td>
+                    <td>{{ entry['bank'] }}</td>
+                    <td>{{ entry['value'] }}</td>
+                    <td>{{ entry['event_transfers'] }}</td>
+                    <td>{{ entry['event_transfers_cost'] }}</td>
+                    <td>{{ entry['points_on_bench'] }}</td>
+                    <td>{{ entry['chips_used'] }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination Controls -->
+    <nav aria-label="Page navigation example">
+        <ul class="pagination justify-content-center">
+            {% if current_page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="?gameweek={{ selected_gameweek }}&page={{ current_page - 1 }}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% endif %}
+            {% for p in range(1, total_pages + 1) %}
+                <li class="page-item {% if current_page == p %}active{% endif %}">
+                    <a class="page-link" href="?gameweek={{ selected_gameweek }}&page={{ p }}">{{ p }}</a>
+                </li>
             {% endfor %}
-        </tbody>
-    </table>
+            {% if current_page < total_pages %}
+            <li class="page-item">
+                <a class="page-link" href="?gameweek={{ selected_gameweek }}&page={{ current_page + 1 }}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
 </div>
 
 <script>
     function updateGameweek() {
-        const gameweek = document.getElementById('gameweek-select').value;
-        // Show the loader and hide the table
-        document.getElementById('loader').style.display = 'block';
-        document.getElementById('standings-table').style.display = 'none';
+        // Show the loader and blur the background
+        document.getElementById('loader').style.display = 'flex';
+        document.getElementById('content-container').classList.add('blurred');
 
         // Redirect to fetch the new data
-        window.location.href = `/standing-score?gameweek=${gameweek}`;
+        const selectedGameweek = document.getElementById('gameweek-select').value;
+        window.location.href = `/standing-score?gameweek=${selectedGameweek}&page=1`;
     }
 
     // Hide loader and show table after the page is loaded
     window.onload = function() {
         document.getElementById('loader').style.display = 'none';
-        document.getElementById('standings-table').style.display = 'table';
+        document.getElementById('content-container').classList.remove('blurred');
     }
 </script>
+
+<style>
+    /* Spinner and Blur Effect */
+    .loader-container {
+        display: none;
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+        text-align: center;
+    }
+
+    .blurred {
+        filter: blur(5px);
+        pointer-events: none;
+    }
+
+    .content-container {
+        transition: filter 0.3s ease;
+    }
+</style>
 {% endblock %}
