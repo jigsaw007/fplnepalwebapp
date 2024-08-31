@@ -1364,6 +1364,30 @@ def top_team_values():
     # Return the top three managers as JSON
     return jsonify(top_three)
 
+@app.route('/api/top_lowest_scores', methods=['GET'])
+def top_lowest_scores():
+    base_url = 'https://fantasy.premierleague.com/api/leagues-classic/420585/standings/'
+    gameweek = int(request.args.get('gameweek', 1))  # Get the gameweek from the request, default to 1
+    all_data = []
+
+    # Fetch all manager IDs from the league
+    for page in range(1, 5):  # Loop through pages 1 to 4
+        params = {'page_new_entries': 1, 'page_standings': page, 'phase': 1}
+        response = requests.get(base_url, params=params)
+        data = response.json()
+        all_data.extend(data['standings']['results'])  # Combine data from each page
+
+    # Fetch gameweek scores for each manager
+    for entry in all_data:
+        manager_id = entry['entry']  # Manager's ID
+        gameweek_score = fetch_gameweek_score(manager_id, gameweek)
+        entry['gameweek_score'] = gameweek_score
+
+    # Sort by gameweek score (ascending) and return the top 3
+    top_three_lowest = sorted(all_data, key=lambda x: x['gameweek_score'])[:3]
+
+    # Return the top three managers as JSON
+    return jsonify(top_three_lowest)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

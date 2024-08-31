@@ -798,10 +798,18 @@
                 </div>
                 <div class="card mb-4">
                     <div class="card-header">
-                        Top 3 Managers by Team Value
+                        Current Highest Team Value
                     </div>
                     <div class="card-body" id="top-team-values">
                         <!-- Top team values will be populated here -->
+                    </div>
+                </div>
+                <div class="card mb-4">
+                    <div class="card-header">
+                        Current Lowest Gameweek Scores
+                    </div>
+                    <div class="card-body" id="top-lowest-scores">
+                        <!-- Top lowest scores will be populated here -->
                     </div>
                 </div>
                 
@@ -1307,7 +1315,7 @@ $(document).ready(function() {
         data.forEach(function(manager, index) {
             topTeamValuesHtml += `
                 <div class="top-team-value-item">
-                    <strong>${index + 1}. ${manager.player_name}</strong> - £${manager.team_value}m
+                    <strong>${index + 1}. ${manager.player_name}</strong> : £${manager.team_value}m
                 </div>
             `;
         });
@@ -1316,5 +1324,26 @@ $(document).ready(function() {
         $('#top-team-values').html(topTeamValuesHtml);
     });
 });
+
+$(document).ready(function() {
+    // Show the Font Awesome spinner initially
+    $('#top-lowest-scores').html('<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading...</div>');
+
+    // Fetch and display top 3 lowest gameweek scores
+    $.get('/api/top_lowest_scores?gameweek=1', function(data) {  // You can dynamically set the gameweek if needed
+        let topLowestScoresHtml = '';
+        data.forEach(function(manager, index) {
+            topLowestScoresHtml += `
+                <div class="top-lowest-score-item">
+                    <strong>${index + 1}. ${manager.player_name}</strong> : ${manager.gameweek_score} pts
+                </div>
+            `;
+        });
+
+        // Hide the spinner and display the data
+        $('#top-lowest-scores').html(topLowestScoresHtml);
+    });
+});
+
     </script>
 {% endblock %}
