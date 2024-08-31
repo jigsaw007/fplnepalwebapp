@@ -1330,5 +1330,40 @@ def standing_score():
         entry['gameweek_score'] = gameweek_score
 
     return render_template('standing-score.html', data=all_data, selected_gameweek=gameweek)
+
+def fetch_team_value(manager_id):
+    history_url = f'https://fantasy.premierleague.com/api/entry/{manager_id}/history/'
+    response = requests.get(history_url)
+    history_data = response.json()
+
+    # Extract the team value (in tenths, so divide by 10)
+    team_value = history_data['current'][-1]['value'] / 10.0
+    return team_value
+
+@app.route('/api/top_team_values', methods=['GET'])
+def top_team_values():
+    base_url = 'https://fantasy.premierleague.com/api/leagues-classic/420585/standings/'
+    all_data = []
+
+    # Fetch all manager IDs from the league
+    for page in range(1, 5):  # Loop through pages 1 to 4
+        params = {'page_new_entries': 1, 'page_standings': page, 'phase': 1}
+        response = requests.get(base_url, params=params)
+        data = response.json()
+        all_data.extend(data['standings']['results'])  # Combine data from each page
+
+    # Fetch team values for each manager
+    for entry in all_data:
+        manager_id = entry['entry']  # Manager's ID
+        team_value = fetch_team_value(manager_id)  # Use your existing fetch_team_value function
+        entry['team_value'] = team_value
+
+    # Sort by team value and return the top 3
+    top_three = sorted(all_data, key=lambda x: x['team_value'], reverse=True)[:3]
+
+    # Return the top three managers as JSON
+    return jsonify(top_three)
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
