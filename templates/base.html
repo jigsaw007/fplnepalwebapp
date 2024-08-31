@@ -23,14 +23,47 @@
       gtag('js', new Date());
       gtag('config', 'G-9HXXFE93ZC');
     </script>
-    <!-- Google AdSense -->
-    <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6697752785156392"
-     crossorigin="anonymous"></script> -->
+
+    <!-- CSS for Spinner and Blur Effect -->
+    <style>
+        .loader-container {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 9999;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        .loader-container i {
+            color: #007bff; /* Adjust the color of the spinner */
+        }
+
+        .blurred {
+            filter: blur(5px);
+            pointer-events: none;
+        }
+
+        .content-container {
+            transition: filter 0.3s ease;
+        }
+    </style>
+
     {% block head %}{% endblock %}
 </head>
 <body>
+    <!-- Global Loader (Spinner) -->
+    <div id="global-loader" class="loader-container">
+        <i class="fas fa-spinner fa-spin fa-3x"></i> <!-- Font Awesome Spinner -->
+        <p>Loading...</p>
+    </div>
+
     <div class="main-content">
-        <!-- Team Logos Container -->
+        <!-- Your existing content -->
         <div class="team-logos" id="team-logos"></div>
         <!-- Navbar -->
         <nav class="navbar navbar-expand-lg navbar-light">
@@ -50,10 +83,19 @@
                         </a>
                         <div class="dropdown-menu" aria-labelledby="h2hLeagueDropdown">
                             <a class="dropdown-item" href="/league">League</a>
-                            <a class="dropdown-item" href="/division-allocation">Division Allocation</a> <!-- New link -->
+                            <a class="dropdown-item" href="/division-allocation">Division Allocation</a>
                         </div>
                     </li>
-                    <li class="nav-item"><a class="nav-link" href="/classic-league">Classic League</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                            Classic League
+                        </a>
+                        <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <a class="dropdown-item" href="/classic-league">Classic League Overview</a>
+                            <a class="dropdown-item" href="/standing-score">Manager Details (Classic)</a>
+                            <a class="dropdown-item" href="/ultimate-standing-score">Manager Details (Ultimate)</a>
+                        </div>
+                    </li>
                     <li class="nav-item"><a class="nav-link" href="/history">History</a></li>
                     <li class="nav-item"><a class="nav-link" href="/compare">Compare</a></li>
                     <li class="nav-item"><a class="nav-link" href="/otw">OTW</a></li>
@@ -63,8 +105,12 @@
                 </ul>
             </div>
         </nav>
-        {% block content %}{% endblock %}
+
+        <div id="content-container" class="content-container">
+            {% block content %}{% endblock %}
+        </div>
     </div>
+
     <footer class="footer mt-auto py-3">
         <div class="container text-center">
             <span>FPLNEPAL | 2011 | <br> Data are fetched from Official Fantasy Premier League Website</span>
@@ -76,24 +122,35 @@
             </div>
         </div>
     </footer>
+
+    <!-- JS scripts -->
     <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/1.7.1/js/dataTables.buttons.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"></script>
     <script src="{{ url_for('static', filename='scripts.js') }}"></script>
+
+    <!-- Global Loader JavaScript -->
     <script>
-        function loadTeamLogos() {
-            $.get('/api/teams', function(data) {
-                const teams = data.teams;
-                const teamLogosContainer = $('#team-logos');
-                teams.forEach(team => {
-                    const logoUrl = `https://resources.premierleague.com/premierleague/badges/t${team.code}.png`;
-                    const logoImg = `<img src="${logoUrl}" alt="${team.name} logo" title="${team.name}">`;
-                    teamLogosContainer.append(logoImg);
-                });
-            });
+        // Handle page navigation with loader
+        window.addEventListener('beforeunload', function() {
+            document.getElementById('global-loader').style.display = 'flex';
+            document.getElementById('content-container').classList.add('blurred');
+        });
+
+        window.onload = function() {
+            document.getElementById('global-loader').style.display = 'none';
+            document.getElementById('content-container').classList.remove('blurred');
         }
-        $(document).ready(function() {
-            loadTeamLogos();
+
+        // Handle AJAX requests with loader using jQuery
+        $(document).ajaxStart(function() {
+            // Show loader when AJAX request starts
+            $('#global-loader').fadeIn();
+            $('#content-container').addClass('blurred');
+        }).ajaxStop(function() {
+            // Hide loader when AJAX request completes
+            $('#global-loader').fadeOut();
+            $('#content-container').removeClass('blurred');
         });
     </script>
 </body>
