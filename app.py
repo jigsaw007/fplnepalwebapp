@@ -1319,7 +1319,7 @@ def get_chip_name(chip):
     }
     return chip_mapping.get(chip, chip)
 
-@app.route('/standing-score', methods=['GET'])
+@app.route('/standing-score', methods=['GET']) #classic-league
 def standing_score():
     base_url = 'https://fantasy.premierleague.com/api/leagues-classic/420585/standings/'
     gameweek = int(request.args.get('gameweek', 1))  # Default to gameweek 1 if not provided
@@ -1345,7 +1345,6 @@ def standing_score():
         mapped_chips = [get_chip_name(chip['name']) for chip in chips_used]
 
         entry['gameweek_score'] = gameweek_score
-        entry['team_value'] = round(history_data['current'][-1]['value'] / 10.0, 1)
         entry['rank'] = entry.get('rank', '')
         entry['overall_rank'] = history_data['current'][-1]['overall_rank']
         entry['bank'] = round(history_data['current'][-1]['bank'] / 10.0, 1)
@@ -1367,6 +1366,52 @@ def standing_score():
         total_pages=total_pages
     )
 
+@app.route('/ultimate-standing-score', methods=['GET'])
+def ultimate_standing_score():
+    base_url = 'https://fantasy.premierleague.com/api/leagues-classic/420581/standings/'  # Ultimate League
+    gameweek = int(request.args.get('gameweek', 1))  # Default to gameweek 1 if not provided
+    page = int(request.args.get('page', 1))  # Default to page 1 if not provided
+    items_per_page = 10  # Define how many items per page
+
+    all_data = []
+
+    # Fetch all manager IDs from the league
+    params = {'page_new_entries': 1, 'page_standings': page, 'phase': 1}
+    response = requests.get(base_url, params=params)
+    data = response.json()
+    all_data.extend(data['standings']['results'])  # Combine data from each page
+
+    # Fetch gameweek scores and additional details for each manager
+    for entry in all_data:
+        manager_id = entry['entry']  # Manager's ID
+        gameweek_score = fetch_gameweek_score(manager_id, gameweek)
+        history_data = get_gameweek_history(manager_id)  # Function to fetch gameweek history and additional details
+
+        # Map chips used
+        chips_used = history_data.get('chips', [])
+        mapped_chips = [get_chip_name(chip['name']) for chip in chips_used]
+
+        entry['gameweek_score'] = gameweek_score
+        entry['rank'] = entry.get('rank', '')
+        entry['overall_rank'] = history_data['current'][-1]['overall_rank']
+        entry['bank'] = round(history_data['current'][-1]['bank'] / 10.0, 1)
+        entry['value'] = round(history_data['current'][-1]['value'] / 1.0, 1)
+        entry['event_transfers'] = history_data['current'][-1]['event_transfers']
+        entry['event_transfers_cost'] = history_data['current'][-1]['event_transfers_cost']
+        entry['points_on_bench'] = history_data['current'][-1]['points_on_bench']
+        entry['chips_used'] = ', '.join(mapped_chips)
+
+    # Calculate total pages
+    total_pages = (len(all_data) + items_per_page - 1) // items_per_page
+
+    return render_template(
+        'ultimate-standing-score.html',  # Ensure this template exists
+        data=all_data, 
+        selected_gameweek=gameweek, 
+        current_page=page, 
+        items_per_page=items_per_page,  # Pass items_per_page to the template
+        total_pages=total_pages
+    )
 
 
 def fetch_team_value(manager_id):
