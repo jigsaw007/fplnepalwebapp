@@ -1302,5 +1302,33 @@ def get_player_status():
     
     return jsonify(player_status_list)
 
+def fetch_gameweek_score(manager_id, gameweek):
+    history_url = f'https://fantasy.premierleague.com/api/entry/{manager_id}/history/'
+    response = requests.get(history_url)
+    history_data = response.json()
+    # Find the score for the selected gameweek
+    gameweek_score = next((gw['points'] for gw in history_data['current'] if gw['event'] == gameweek), 0)
+    return gameweek_score
+
+@app.route('/standing-score', methods=['GET'])
+def standing_score():
+    base_url = 'https://fantasy.premierleague.com/api/leagues-classic/420585/standings/'
+    gameweek = int(request.args.get('gameweek', 1))  # Default to gameweek 1 if not provided
+    all_data = []
+
+    # Step 1: Fetch all manager IDs from the league
+    for page in range(1, 5):  # Loop through pages 1 to 4
+        params = {'page_new_entries': 1, 'page_standings': page, 'phase': 1}
+        response = requests.get(base_url, params=params)
+        data = response.json()
+        all_data.extend(data['standings']['results'])  # Combine data from each page
+
+    # Step 2: Fetch gameweek scores for each manager
+    for entry in all_data:
+        manager_id = entry['entry']  # Manager's ID
+        gameweek_score = fetch_gameweek_score(manager_id, gameweek)
+        entry['gameweek_score'] = gameweek_score
+
+    return render_template('standing-score.html', data=all_data, selected_gameweek=gameweek)
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

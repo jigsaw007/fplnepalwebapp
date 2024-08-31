@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Standings Score
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Manager Standings</h2>
+
+    <!-- Loader -->
+    <div id="loader" class="text-center" style="display:none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="sr-only">Loading...</span>
+        </div>
+        <p>Loading gameweek scores...</p>
+    </div>
+
+    <!-- Gameweek Selector -->
+    <div class="form-group">
+        <label for="gameweek-select">Select Gameweek:</label>
+        <select id="gameweek-select" class="form-control" onchange="updateGameweek()">
+            {% for gw in range(1, 39) %}
+                <option value="{{ gw }}" {% if gw == selected_gameweek %}selected{% endif %}>Gameweek {{ gw }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <!-- Standings Table -->
+    <table id="standings-table" class="table table-striped">
+        <thead>
+            <tr>
+                <th>SN</th>
+                <th>Manager Name</th>
+                <th>Gameweek {{ selected_gameweek }} Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in data %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ entry['player_name'] }}</td>
+                <td>{{ entry['gameweek_score'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+    function updateGameweek() {
+        const gameweek = document.getElementById('gameweek-select').value;
+        // Show the loader and hide the table
+        document.getElementById('loader').style.display = 'block';
+        document.getElementById('standings-table').style.display = 'none';
+
+        // Redirect to fetch the new data
+        window.location.href = `/standing-score?gameweek=${gameweek}`;
+    }
+
+    // Hide loader and show table after the page is loaded
+    window.onload = function() {
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('standings-table').style.display = 'table';
+    }
+</script>
+{% endblock %}
