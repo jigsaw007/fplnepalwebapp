@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request,Response
+from flask import Flask, render_template, jsonify, request,Response,send_from_directory
 import requests
 import logging
 from collections import defaultdict
@@ -1310,26 +1310,64 @@ def fetch_gameweek_score(manager_id, gameweek):
     gameweek_score = next((gw['points'] for gw in history_data['current'] if gw['event'] == gameweek), 0)
     return gameweek_score
 
+def get_chip_name(chip):
+    chip_mapping = {
+        '3xc': 'Triple Captain',
+        'bboost': 'Bench Boost',
+        'wildcard': 'Wildcard',
+        'fh': 'Free Hit'
+    }
+    return chip_mapping.get(chip, chip)
+
 @app.route('/standing-score', methods=['GET'])
 def standing_score():
     base_url = 'https://fantasy.premierleague.com/api/leagues-classic/420585/standings/'
     gameweek = int(request.args.get('gameweek', 1))  # Default to gameweek 1 if not provided
+    page = int(request.args.get('page', 1))  # Default to page 1 if not provided
+    items_per_page = 10  # Define how many items per page
+
     all_data = []
 
-    # Step 1: Fetch all manager IDs from the league
-    for page in range(1, 5):  # Loop through pages 1 to 4
-        params = {'page_new_entries': 1, 'page_standings': page, 'phase': 1}
-        response = requests.get(base_url, params=params)
-        data = response.json()
-        all_data.extend(data['standings']['results'])  # Combine data from each page
+    # Fetch all manager IDs from the league
+    params = {'page_new_entries': 1, 'page_standings': page, 'phase': 1}
+    response = requests.get(base_url, params=params)
+    data = response.json()
+    all_data.extend(data['standings']['results'])  # Combine data from each page
 
-    # Step 2: Fetch gameweek scores for each manager
+    # Fetch gameweek scores and additional details for each manager
     for entry in all_data:
         manager_id = entry['entry']  # Manager's ID
         gameweek_score = fetch_gameweek_score(manager_id, gameweek)
-        entry['gameweek_score'] = gameweek_score
+        history_data = get_gameweek_history(manager_id)  # Function to fetch gameweek history and additional details
 
-    return render_template('standing-score.html', data=all_data, selected_gameweek=gameweek)
+        # Map chips used
+        chips_used = history_data.get('chips', [])
+        mapped_chips = [get_chip_name(chip['name']) for chip in chips_used]
+
+        entry['gameweek_score'] = gameweek_score
+        entry['team_value'] = round(history_data['current'][-1]['value'] / 10.0, 1)
+        entry['rank'] = entry.get('rank', '')
+        entry['overall_rank'] = history_data['current'][-1]['overall_rank']
+        entry['bank'] = round(history_data['current'][-1]['bank'] / 10.0, 1)
+        entry['value'] = round(history_data['current'][-1]['value'] / 1.0, 1)
+        entry['event_transfers'] = history_data['current'][-1]['event_transfers']
+        entry['event_transfers_cost'] = history_data['current'][-1]['event_transfers_cost']
+        entry['points_on_bench'] = history_data['current'][-1]['points_on_bench']
+        entry['chips_used'] = ', '.join(mapped_chips)
+
+    # Calculate total pages
+    total_pages = (len(all_data) + items_per_page - 1) // items_per_page
+
+    return render_template(
+        'standing-score.html', 
+        data=all_data, 
+        selected_gameweek=gameweek, 
+        current_page=page, 
+        items_per_page=items_per_page,  # Pass items_per_page to the template
+        total_pages=total_pages
+    )
+
+
 
 def fetch_team_value(manager_id):
     history_url = f'https://fantasy.premierleague.com/api/entry/{manager_id}/history/'
