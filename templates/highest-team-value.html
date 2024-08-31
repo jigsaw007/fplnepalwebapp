@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Highest Team Value
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Managers with the Highest Team Value</h2>
+
+    <!-- Team Value Table -->
+    <table id="team-value-table" class="table table-striped">
+        <thead>
+            <tr>
+                <th>SN</th>
+                <th>Manager Name</th>
+                <th>Team Value</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for entry in data %}
+            <tr>
+                <td>{{ loop.index }}</td>
+                <td>{{ entry['player_name'] }}</td>
+                <td>{{ entry['team_value'] }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
