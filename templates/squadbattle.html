@@ -83,21 +83,42 @@
             </div> <!-- End of Squad Battle Section Container -->
         </div>
 
-        <!-- Right column (sidebar) -->
-        <div class="col-lg-4">
-            <div id="sidebar">
-                <!-- Top 5 Squads by Total Gameweek Score -->
-                <h4 class="my-4">Top 5 Squads</h4>
-                <ul class="list-group">
-                    {% for squad_name, squad_data in top_squads %}
-                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                        {{ squad_name }}
-                        <span class="badge badge-primary badge-pill">{{ squad_data.total_gameweek_score }}</span>
-                    </li>
-                    {% endfor %}
-                </ul>
-            </div>
+<!-- Right column (sidebar) -->
+<div class="col-lg-4">
+    <div id="sidebar">
+        <!-- Top 5 Squads by Total Gameweek Score -->
+        <h4 class="my-4">Top 5 Squads</h4>
+        <ul class="list-group">
+            {% for squad_name, squad_data in top_squads %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                {{ squad_name }}
+                <span class="badge badge-primary badge-pill">{{ squad_data.total_gameweek_score }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+
+<!-- Top 3 Most Selected Players -->
+<h4 class="my-4">Top 3 Most Selected Players by Squad</h4>
+<ul class="list-group">
+    {% for player_id, count in top_3_players %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        <!-- Player Image -->
+        <img src="https://resources.premierleague.com/premierleague/photos/players/110x140/p{{ players[player_id]['code'] }}.png" 
+             alt="{{ players[player_id]['web_name'] }}" 
+             class="img-thumbnail mr-2" 
+             style="width: 50px; height: 70px;">
+        <!-- Player Name and Team -->
+        <div>
+            <strong>{{ players[player_id]['web_name'] }}</strong> <br>
+            <small>{{ teams[players[player_id]['team']] }}</small>
         </div>
+        <!-- Player Selection Count -->
+        <span class="badge badge-primary badge-pill">{{ count }} times</span>
+    </li>
+    {% endfor %}
+</ul>
+    </div>
+</div>
     </div>
 </div>
 

@@ -1482,12 +1482,28 @@ def load_managers():
         managers = json.load(file)
     return managers
 
+from collections import Counter
+
+# Fetch and cache the player data
+def get_player_data():
+    # Fetch player details from the FPL Bootstrap Static API
+    response = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/')
+    if response.status_code == 200:
+        data = response.json()
+        players = {player['id']: player for player in data['elements']}
+        teams = {team['id']: team['name'] for team in data['teams']}
+        return players, teams
+    return {}, {}
+
+# Load player and team data
+players, teams = get_player_data()
+
 @app.route('/squadbattle')
 def squad_battle_page():
-    # Load managers from the external JSON file
     managers = load_managers()
 
     squads = {}
+    player_counter = Counter()  # To keep track of player selections
     gameweek = request.args.get('gameweek', 1, type=int)  # Default to Gameweek 1
 
     # Group managers by squad name
@@ -1516,11 +1532,23 @@ def squad_battle_page():
             # Add the manager's gameweek score to the squad total
             squads[squad_name]["managers"].append(manager_data)
             squads[squad_name]["total_gameweek_score"] += gameweek_points
+            
+            # Fetch players selected by each manager for this gameweek
+            picks_response = requests.get(f"https://fantasy.premierleague.com/api/entry/{manager['id']}/event/{gameweek}/picks/")
+            if picks_response.status_code == 200:
+                picks_data = picks_response.json()
+                for pick in picks_data['picks']:
+                    player_id = pick['element']  # Each pick contains a player ID
+                    player_counter[player_id] += 1  # Increment player selection count
 
-    # Now, after the squads are fully populated, sort the squads by total gameweek score
+    # Sort squads by total gameweek score and get the top 5
     top_squads = sorted(squads.items(), key=lambda x: x[1]['total_gameweek_score'], reverse=True)[:5]
 
-    return render_template('squadbattle.html', squads=squads, selected_gameweek=gameweek, top_squads=top_squads)
+    # Get the top 3 most selected players
+    top_3_players = player_counter.most_common(3)
+
+    return render_template('squadbattle.html', squads=squads, selected_gameweek=gameweek, top_squads=top_squads, top_3_players=top_3_players, players=players, teams=teams)
+
 
 
 @app.route('/squadsheet')
