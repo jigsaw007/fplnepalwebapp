@@ -7,6 +7,8 @@ from datetime import datetime
 import pandas as pd
 import io
 import urllib.parse
+import json
+import os
 
 app = Flask(__name__, template_folder='templates')
 
@@ -1471,6 +1473,77 @@ def top_lowest_scores():
 
     # Return the top three managers as JSON
     return jsonify(top_three_lowest)
+
+# Assuming the JSON file is stored in the same directory as the app.py file
+JSON_FILE_PATH = os.path.join(os.path.dirname(__file__), 'managers.json')
+
+def load_managers():
+    with open(JSON_FILE_PATH, 'r') as file:
+        managers = json.load(file)
+    return managers
+
+@app.route('/squadbattle')
+def squad_battle_page():
+    # Load managers from the external JSON file
+    managers = load_managers()
+
+    squads = {}
+    gameweek = request.args.get('gameweek', 1, type=int)  # Default to Gameweek 1
+
+    # Group managers by squad name
+    for manager in managers:
+        squad_name = manager['squad']
+        if squad_name not in squads:
+            squads[squad_name] = {
+                "managers": [],
+                "total_gameweek_score": 0
+            }
+        
+        # Fetch the gameweek and total points for each manager
+        response = requests.get(f"https://fantasy.premierleague.com/api/entry/{manager['id']}/history/")
+        if response.status_code == 200:
+            data = response.json()
+            current_event = next((event for event in data['current'] if event['event'] == gameweek), None)
+            gameweek_points = current_event['points'] if current_event else 0
+            
+            manager_data = {
+                "name": manager['name'],
+                "div": manager['div'],
+                "id": manager['id'],
+                "gameweek_points": gameweek_points
+            }
+
+            # Add the manager's gameweek score to the squad total
+            squads[squad_name]["managers"].append(manager_data)
+            squads[squad_name]["total_gameweek_score"] += gameweek_points
+
+    # Now, after the squads are fully populated, sort the squads by total gameweek score
+    top_squads = sorted(squads.items(), key=lambda x: x[1]['total_gameweek_score'], reverse=True)[:5]
+
+    return render_template('squadbattle.html', squads=squads, selected_gameweek=gameweek, top_squads=top_squads)
+
+
+@app.route('/squadsheet')
+def squad_sheet_page():
+    # Load managers from the external JSON file
+    managers = load_managers()
+
+    squads = {}
+
+    # Group managers by squad name
+    for manager in managers:
+        squad_name = manager['squad']
+        if squad_name not in squads:
+            squads[squad_name] = {
+                "managers": [],
+            }
+        squads[squad_name]["managers"].append({
+            "name": manager['name'],
+            "div": manager['div'],
+            "id": manager['id'],
+        })
+
+    return render_template('squadsheet.html', squads=squads)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

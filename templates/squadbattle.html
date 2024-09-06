@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Squad Battle
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-tabs mb-4">
+            <li class="nav-item">
+                <a class="nav-link active" href="{{ url_for('squad_battle_page') }}">Squad Battle</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="{{ url_for('squad_sheet_page') }}">Squad Sheet</a>
+            </li>
+        </ul>
+    </div>
+    <div class="row">
+        <!-- Left column for the main content (Squad Battle) -->
+        <div class="col-lg-8">
+            <!-- Squad Battle Section Container -->
+            <div id="squad-battle-section">
+                <h2 class="my-4">Squad Battle</h2>
+
+                <!-- Global Loader -->
+                <div id="global-loader" style="display:none; text-align:center;">
+                    <i class="fas fa-spinner fa-spin fa-3x"></i> <!-- Font Awesome Spinner -->
+                </div>
+                
+                <!-- Gameweek Dropdown -->
+                <div class="form-group">
+                    <label for="gameweek-select">Select Gameweek:</label>
+                    <select class="form-control" id="gameweek-select">
+                        {% for i in range(1, 39) %}
+                        <option value="{{ i }}" {% if i == selected_gameweek %} selected {% endif %}>Gameweek {{ i }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Loop through each squad -->
+                {% for squad_name, squad_data in squads.items() %}
+                <div class="card my-2"> <!-- Reduced the margin -->
+                    <div class="card-header py-1"> <!-- Reduced padding -->
+                        <!-- Expandable Squad Name -->
+                        <h5 class="mb-0"> <!-- Reduced font size -->
+                            <a href="#" class="squad-toggle" data-toggle="collapse" data-target="#squad-{{ loop.index }}">
+                                {{ squad_name }} (Squad Gameweek Total: {{ squad_data.total_gameweek_score }})
+                            </a>
+                        </h5>
+                    </div>
+                    
+                    <!-- Collapsible Managers Table with Local Loader -->
+                    <div id="squad-{{ loop.index }}" class="collapse">
+                        <div class="card-body py-1"> <!-- Reduced padding -->
+                            <!-- Local Loader -->
+                            <div id="local-loader-{{ loop.index }}" class="local-loader" style="display:none; text-align:center;">
+                                <i class="fas fa-spinner fa-spin fa-2x"></i> <!-- Font Awesome Spinner for local loader -->
+                            </div>
+
+                            <!-- Managers Table -->
+                            <table class="table table-bordered" id="squad-table-{{ loop.index }}">
+                                <thead class="thead-dark">
+                                    <tr>
+                                        <th>Manager Name</th>
+                                        <th>Division</th>
+                                        <th>Gameweek Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for manager in squad_data.managers %}
+                                    <tr>
+                                        <td>{{ manager.name }}</td>
+                                        <td>{{ manager.div }}</td>
+                                        <td>{{ manager.gameweek_points }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div> <!-- End of Squad Battle Section Container -->
+        </div>
+
+        <!-- Right column (sidebar) -->
+        <div class="col-lg-4">
+            <div id="sidebar">
+                <!-- Top 5 Squads by Total Gameweek Score -->
+                <h4 class="my-4">Top 5 Squads</h4>
+                <ul class="list-group">
+                    {% for squad_name, squad_data in top_squads %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ squad_name }}
+                        <span class="badge badge-primary badge-pill">{{ squad_data.total_gameweek_score }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Inline CSS for better styling -->
+<style>
+    .card-header a {
+        text-decoration: none; /* Removes underline */
+        color: #ffffff; /* Makes the text white */
+        font-weight: bold;
+    }
+    .card-header a:hover {
+        color: #f0f0f0; /* Slightly lighter white on hover */
+    }
+    .card-header {
+        background-color: #4b0082;
+        color: white;
+    }
+    .card {
+        border: none;
+        margin-bottom: 0.5rem; /* Reduced gap between cards */
+    }
+    .table thead {
+        background-color: #6c757d;
+        color: white;
+    }
+    .card-header h5 {
+        font-size: 1.2rem; /* Smaller font size for squad names */
+    }
+    .card-body, .card-header {
+        padding: 0.5rem; /* Reduced padding inside cards */
+    }
+</style>
+
+<script>
+    // Global loader functionality
+    document.getElementById('gameweek-select').addEventListener('change', function() {
+        var selectedGameweek = this.value;
+        
+        // Show global loader
+        document.getElementById('global-loader').style.display = 'block';
+
+        // Fetch data and redirect
+        window.location.href = "?gameweek=" + selectedGameweek;
+    });
+
+    // Local loader functionality for squad expansion
+    $('.squad-toggle').on('click', function() {
+        var target = $(this).data('target');
+        var localLoader = $(target).find('.local-loader');
+        var table = $(target).find('table');
+
+        // Show local loader and hide table temporarily
+        table.hide();
+        localLoader.show();
+
+        // Simulate loading (Replace this with actual data fetching logic if necessary)
+        setTimeout(function() {
+            localLoader.hide();
+            table.show();
+        }, 1000); // Simulated delay, replace as necessary
+    });
+</script>
+{% endblock %}
