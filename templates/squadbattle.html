@@ -17,6 +17,7 @@
             </li>
         </ul>
     </div>
+
     <div class="row">
         <!-- Left column for the main content (Squad Battle) -->
         <div class="col-lg-8">
@@ -39,49 +40,46 @@
                     </select>
                 </div>
 
-                <!-- Loop through each squad -->
-                {% for squad_name, squad_data in squads.items() %}
-                <div class="card my-2"> <!-- Reduced the margin -->
-                    <div class="card-header py-1"> <!-- Reduced padding -->
-                        <!-- Expandable Squad Name -->
-                        <h5 class="mb-0"> <!-- Reduced font size -->
-                            <a href="#" class="squad-toggle" data-toggle="collapse" data-target="#squad-{{ loop.index }}">
-                                {{ squad_name }} (Squad Gameweek Total: {{ squad_data.total_gameweek_score }})
-                            </a>
-                        </h5>
-                    </div>
-                    
-                    <!-- Collapsible Managers Table with Local Loader -->
-                    <div id="squad-{{ loop.index }}" class="collapse">
-                        <div class="card-body py-1"> <!-- Reduced padding -->
-                            <!-- Local Loader -->
-                            <div id="local-loader-{{ loop.index }}" class="local-loader" style="display:none; text-align:center;">
-                                <i class="fas fa-spinner fa-spin fa-2x"></i> <!-- Font Awesome Spinner for local loader -->
-                            </div>
-
-                            <!-- Managers Table -->
-                            <table class="table table-bordered" id="squad-table-{{ loop.index }}">
-                                <thead class="thead-dark">
-                                    <tr>
-                                        <th>Manager Name</th>
-                                        <th>Division</th>
-                                        <th>Gameweek Score</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {% for manager in squad_data.managers %}
-                                    <tr>
-                                        <td>{{ manager.name }}</td>
-                                        <td>{{ manager.div }}</td>
-                                        <td>{{ manager.gameweek_points }}</td>
-                                    </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
+                <!-- Table view for squads and their total gameweek score -->
+                <table class="table table-striped table-bordered">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Squad Name</th>
+                            <th>Squad Gameweek Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for squad_name, squad_data in squads.items() %}
+                        <tr data-toggle="collapse" data-target="#managers-{{ loop.index }}" class="clickable">
+                            <td><i class="fas fa-chevron-down"></i> {{ squad_name }}</td>
+                            <td>{{ squad_data.total_gameweek_score }}</td>
+                        </tr>
+                        <!-- Expandable row with managers details -->
+                        <tr id="managers-{{ loop.index }}" class="collapse">
+                            <td colspan="2">
+                                <table class="table table-sm table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Manager Name</th>
+                                            <th>Division</th>
+                                            <th>Gameweek Score</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for manager in squad_data.managers %}
+                                        <tr>
+                                            <td>{{ manager.name }}</td>
+                                            <td>{{ manager.div }}</td>
+                                            <td>{{ manager.gameweek_points }}</td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div> <!-- End of Squad Battle Section Container -->
         </div>
 
@@ -105,13 +103,14 @@
 
 <!-- Inline CSS for better styling -->
 <style>
+    /* General styling for the card headers and links */
     .card-header a {
-        text-decoration: none; /* Removes underline */
-        color: #ffffff; /* Makes the text white */
+        text-decoration: none;
+        color: #ffffff;
         font-weight: bold;
     }
     .card-header a:hover {
-        color: #f0f0f0; /* Slightly lighter white on hover */
+        color: #f0f0f0;
     }
     .card-header {
         background-color: #4b0082;
@@ -119,17 +118,64 @@
     }
     .card {
         border: none;
-        margin-bottom: 0.5rem; /* Reduced gap between cards */
+        margin-bottom: 0.5rem;
     }
+
+    /* Styling for the table */
+    table {
+        width: 100%;
+        margin-top: 20px;
+    }
+
     .table thead {
-        background-color: #6c757d;
+        background-color: #4b0082; /* Header background */
         color: white;
     }
-    .card-header h5 {
-        font-size: 1.2rem; /* Smaller font size for squad names */
+
+    .table tbody tr {
+        background-color: #f9f9f9;
+        transition: background-color 0.3s ease;
     }
-    .card-body, .card-header {
-        padding: 0.5rem; /* Reduced padding inside cards */
+
+    .table tbody tr:hover {
+        background-color: #f0f0f0;
+    }
+
+    th, td {
+        text-align: center;
+        padding: 12px;
+    }
+
+    /* Expand/Collapse Icon */
+    .clickable {
+        cursor: pointer;
+    }
+
+    .clickable .fa-chevron-down {
+        transition: transform 0.3s ease;
+    }
+
+    .clickable.collapsed .fa-chevron-down {
+        transform: rotate(180deg);
+    }
+
+    /* Style for Gameweek Dropdown */
+    .form-group label {
+        font-weight: bold;
+    }
+
+    .form-control {
+        width: 50%;
+        margin: 0 auto;
+    }
+
+    /* Top 5 Squads styling */
+    .list-group-item {
+        background-color: #4b0082;
+        color: white;
+    }
+    .list-group-item .badge {
+        background-color: #007bff;
     }
 </style>
 
@@ -145,21 +191,11 @@
         window.location.href = "?gameweek=" + selectedGameweek;
     });
 
-    // Local loader functionality for squad expansion
-    $('.squad-toggle').on('click', function() {
+    // Expand/Collapse functionality
+    $(document).on('click', '.clickable', function() {
+        $(this).toggleClass('collapsed');
         var target = $(this).data('target');
-        var localLoader = $(target).find('.local-loader');
-        var table = $(target).find('table');
-
-        // Show local loader and hide table temporarily
-        table.hide();
-        localLoader.show();
-
-        // Simulate loading (Replace this with actual data fetching logic if necessary)
-        setTimeout(function() {
-            localLoader.hide();
-            table.show();
-        }, 1000); // Simulated delay, replace as necessary
+        $(target).collapse('toggle');
     });
 </script>
 {% endblock %}
