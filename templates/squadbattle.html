@@ -68,7 +68,12 @@
                                     <tbody>
                                         {% for manager in squad_data.managers %}
                                         <tr>
-                                            <td>{{ manager.name }}</td>
+                                            <!-- Link to FPL team page by manager ID -->
+            <td>
+                <a href="https://fantasy.premierleague.com/entry/{{ manager.id }}/event/{{ selected_gameweek }}" target="_blank">
+                    {{ manager.name }}
+                </a>
+            </td>
                                             <td>{{ manager.div }}</td>
                                             <td>{{ manager.gameweek_points }}</td>
                                         </tr>
