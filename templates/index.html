@@ -714,21 +714,22 @@
                     </div>
                 </div>
                 
-                <div class="card mb-4 top-transfer">
-                    <div class="card-header">
-                        Top Transfers out this Gameweek <i class="fa-solid fa-arrow-down"></i>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-6" id="top-transfers-out">
-                                <!-- Top transfers out will be populated here -->
-                            </div>
-                            <div class="col-6" id="top-transfers-out-count">
-                                <!-- Top transfers out counts will be populated here -->
-                            </div>
-                        </div>
-                    </div>
-                </div>
+<!-- Top Transfers Out Card -->
+<div class="card mb-4 top-transfer">
+    <div class="card-header">
+        Top Transfers Out this Gameweek <i class="fa-solid fa-arrow-down"></i>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-6" id="top-transfers-out">
+                <!-- Top transfers out names will be populated here -->
+            </div>
+            <div class="col-6" id="top-transfers-out-count">
+                <!-- Top transfers out counts will be populated here -->
+            </div>
+        </div>
+    </div>
+</div>
 
                 <div class="card mb-4">
                     <div class="card-header">
@@ -1070,7 +1071,8 @@ $(document).ready(function() {
             <div class="player-info">
                 <strong>${player.name}</strong>
                 <span class="team-name">(${player.team})</span><br>
-                Cost: £${player.cost}m
+                Cost: £${player.now_cost}m
+
             </div>
         </div>
     `);
@@ -1124,10 +1126,11 @@ $('#fixtures-prev-button').click(function() {
 loadFixtures(currentEvent);
 
 $(document).ready(function() {
-    // Fetch and display top transfers in
+    // Fetch and display top 5 transfers in players
     $.get('/api/top_transfers_in', function(data) {
         let topTransfersInHtml = '';
         let topTransfersInCountHtml = '';
+        
         data.forEach(function(player) {
             topTransfersInHtml += `
                 <div class="top-transfer-item">
@@ -1136,18 +1139,20 @@ $(document).ready(function() {
             `;
             topTransfersInCountHtml += `
                 <div class="top-transfer-count badge badge-primary badge-pill">
-                    ${player.transfers}
+                    ${player.transfers_in_event}
                 </div>
             `;
         });
+        
         $('#top-transfers-in').html(topTransfersInHtml);
         $('#top-transfers-in-count').html(topTransfersInCountHtml);
     });
 
-    // Fetch and display top transfers out
+    // Fetch and display top 5 transfers out players
     $.get('/api/top_transfers_out', function(data) {
         let topTransfersOutHtml = '';
         let topTransfersOutCountHtml = '';
+        
         data.forEach(function(player) {
             topTransfersOutHtml += `
                 <div class="top-transfer-item">
@@ -1156,14 +1161,16 @@ $(document).ready(function() {
             `;
             topTransfersOutCountHtml += `
                 <div class="top-transfer-count badge badge-danger badge-pill">
-                    ${player.transfers}
+                    ${player.transfers_out_event}
                 </div>
             `;
         });
+        
         $('#top-transfers-out').html(topTransfersOutHtml);
         $('#top-transfers-out-count').html(topTransfersOutCountHtml);
     });
 });
+
 
 $(document).ready(function() {
         let currentDivisionIndex = 0;

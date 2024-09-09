@@ -51,15 +51,67 @@ def fetch_google_sheet_data(url):
     df = pd.read_csv(io.StringIO(data))
     return df
 
+BASE_URL = "https://fantasy.premierleague.com/api/"
+BOOTSTRAP_STATIC_URL = f"{BASE_URL}bootstrap-static/"
+
+# Function to get the bootstrap static data
+def get_bootstrap_static_data():
+    response = requests.get(BOOTSTRAP_STATIC_URL)
+    response.raise_for_status()
+    return response.json()
+
+# Load the players data from the bootstrap static API
+try:
+    bootstrap_static_data = get_bootstrap_static_data()
+    players = bootstrap_static_data.get('elements', [])
+except Exception as e:
+    logging.error(f"Error fetching bootstrap static data: {e}")
+    players = []
+
 @app.route('/api/top_players', methods=['GET'])
 def get_top_players():
-    top_players = sorted(players, key=lambda x: float(x['selected_by_percent']), reverse=True)[:3]
-    result = [{
-        'name': player['web_name'],
-        'selected_by_percent': player['selected_by_percent'],
-        'photo': f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{player['photo'].replace('.jpg', '')}.png"
-    } for player in top_players]
-    return jsonify(result)
+    try:
+        # Fetch the bootstrap static data
+        response = requests.get(f"{BASE_URL}bootstrap-static/")
+        players = response.json().get('elements', [])  # Fetch players from the 'elements' key
+
+        # Print first 5 players for debugging
+        print("First 5 players:", players[:5])
+
+        # Ensure players are valid dictionaries with the necessary fields
+        valid_players = [
+            player for player in players
+            if isinstance(player, dict)
+            and player.get('selected_by_percent')  # Make sure the field exists
+            and player.get('photo')
+            and player.get('web_name')
+        ]
+
+        # If no valid players found, return an error
+        if not valid_players:
+            logging.error("No valid players found")
+            return jsonify({"error": "No valid players found"}), 404
+
+        # Fetch top 3 players sorted by 'selected_by_percent'
+        top_players = sorted(valid_players, key=lambda x: float(x.get('selected_by_percent', 0)), reverse=True)[:3]
+
+        # Print the result to the console for debugging
+        print("Top Players Result: ", top_players)
+
+        # Format the result
+        result = [{
+            'name': player['web_name'],
+            'selected_by_percent': player['selected_by_percent'],
+            'photo': f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{player['photo'].replace('.jpg', '')}.png"
+        } for player in top_players]
+
+        return jsonify(result)
+    
+    except Exception as e:
+        logging.error(f"Error fetching top players: {e}", exc_info=True)
+        return jsonify({'error': 'Failed to fetch top players'}, 500)
+
+
 
 @app.route('/api/teams')
 def get_teams():
@@ -543,9 +595,16 @@ def get_all_leagues_data():
         app.logger.error(f"Error fetching league data: {e}")
         return jsonify({"error": "Failed to fetch league data"}), 500
     
+@app.route('/api/fixtures', defaults={'event': None}, methods=['GET'])
 @app.route('/api/fixtures/<int:event>', methods=['GET'])
 def get_fixtures_for_event(event):
     try:
+        # If event is None, get the current gameweek
+        if event is None:
+            # Assuming the bootstrap-static API contains the current event
+            bootstrap_data = requests.get(BOOTSTRAP_STATIC_URL).json()
+            event = bootstrap_data['events'][0]['id']  # Get the first active gameweek
+
         response = requests.get(f"{FIXTURES_URL}?event={event}")
         response.raise_for_status()
         fixtures = response.json()
@@ -564,6 +623,7 @@ def get_fixtures_for_event(event):
     except requests.exceptions.RequestException as e:
         logging.error(f"Error fetching fixtures for event {event}: {e}")
         return jsonify({"error": "Failed to fetch fixtures"}), 500
+
 
 @app.route('/api/highest_scorers/<int:gameweek>', methods=['GET'])
 def get_highest_scorers(gameweek):
@@ -1145,47 +1205,38 @@ def get_bootstrap_static_data():
 @app.route('/api/captaincy_suggestions', methods=['GET'])
 def get_captaincy_suggestions():
     try:
-        # Fetch the upcoming fixtures
-        fixtures = requests.get(FIXTURES_URL).json()
+        # Fetch the bootstrap static data
+        response = requests.get(f"{BASE_URL}bootstrap-static/")
+        players = response.json().get('elements', [])
+        teams = response.json().get('teams', [])
 
-        def get_next_fixture(player_team_id):
-            for fixture in fixtures:
-                if fixture['team_h'] == player_team_id:
-                    opponent_id = fixture['team_a']
-                    return f"{teams[opponent_id]} (Home)"
-                elif fixture['team_a'] == player_team_id:
-                    opponent_id = fixture['team_h']
-                    return f"{teams[opponent_id]} (Away)"
-
-        def captaincy_score(player):
-            score = (float(player['points_per_game']) * 0.4 +
-                     float(player['form']) * 0.3 +
-                     float(player['goals_scored']) * 0.15 +
-                     float(player['assists']) * 0.1 +
-                     float(player['expected_goal_involvements_per_90']) * 0.05)
+        # Function to calculate captaincy score based on player performance metrics
+        def calculate_captaincy_score(player):
+            score = (float(player.get('points_per_game', 0)) * 0.4 +   # 40% weight for points per game
+                     float(player.get('form', 0)) * 0.3 +              # 30% weight for form
+                     float(player.get('goals_scored', 0)) * 0.15 +     # 15% weight for goals scored
+                     float(player.get('assists', 0)) * 0.1 +           # 10% weight for assists
+                     float(player.get('expected_goal_involvements', 0)) * 0.05)  # 5% weight for expected goal involvements
             return score
 
-        # Calculate scores for all players
+        # Calculate captaincy scores for all players
         player_scores = [
             {
-                'id': player['id'],
                 'name': player['web_name'],
-                'team': teams[player['team']],
-                'cost': player['now_cost'] / 10.0,
-                'next_fixture': get_next_fixture(player['team']),
+                'team': teams[player['team'] - 1]['name'],  # Get team name from teams list
+                'captaincy_score': calculate_captaincy_score(player),
                 'photo': f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{player['photo'].replace('.jpg', '')}.png",
-                'captaincy_score': captaincy_score(player)
+                'now_cost': player['now_cost'] / 10  # Ensure now_cost is included and divided by 10 to get the correct value
             }
             for player in players
         ]
 
-        # Sort players by captaincy score
+        # Sort players by captaincy score and get the top 3 players
         player_scores.sort(key=lambda x: x['captaincy_score'], reverse=True)
-
-        # Select the top 3 players as captaincy suggestions
         captaincy_suggestions = player_scores[:3]
-        return jsonify(captaincy_suggestions)
 
+        return jsonify(captaincy_suggestions)
+    
     except Exception as e:
         logging.error(f"Error fetching captaincy suggestions: {e}", exc_info=True)
         return jsonify({"error": str(e)}), 500
@@ -1266,43 +1317,86 @@ def get_players():
     
 @app.route('/api/top_transfers_in', methods=['GET'])
 def get_top_transfers_in():
-    # Fetch top 5 transfers in
-    top_transfers_in = sorted(players, key=lambda x: x['transfers_in_event'], reverse=True)[:5]
-    result = [{
-        'name': player['web_name'],
-        'team': teams[player['team']],
-        'transfers': player['transfers_in_event'],
-        'position': element_types[player['element_type']]
-    } for player in top_transfers_in]
-    return jsonify(result)
+    try:
+        # Fetch the bootstrap static data
+        response = requests.get(f"{BASE_URL}bootstrap-static/")
+        players = response.json().get('elements', [])
+        teams = response.json().get('teams', [])
+        element_types = response.json().get('element_types', [])
+
+        # Filter and sort players by 'transfers_in_event' (top 5 players)
+        top_transfers_in = sorted(players, key=lambda x: x.get('transfers_in_event', 0), reverse=True)[:5]
+
+        # Format the result
+        result = [{
+            'name': player['web_name'],
+            'position': element_types[player['element_type'] - 1]['singular_name_short'],
+            'team': teams[player['team'] - 1]['short_name'],
+            'transfers_in_event': player.get('transfers_in_event', 0),
+            'photo': f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{player['photo'].replace('.jpg', '')}.png"
+        } for player in top_transfers_in]
+
+        return jsonify(result)
+    
+    except Exception as e:
+        logging.error(f"Error fetching top transfers in: {e}", exc_info=True)
+        return jsonify({'error': 'Failed to fetch top transfers in'}, 500)
 
 @app.route('/api/top_transfers_out', methods=['GET'])
 def get_top_transfers_out():
-    # Fetch top 5 transfers out
-    top_transfers_out = sorted(players, key=lambda x: x['transfers_out_event'], reverse=True)[:5]
-    result = [{
-        'name': player['web_name'],
-        'team': teams[player['team']],
-        'transfers': player['transfers_out_event'],
-        'position': element_types[player['element_type']]
-    } for player in top_transfers_out]
-    return jsonify(result)
+    try:
+        # Fetch the bootstrap static data
+        response = requests.get(f"{BASE_URL}bootstrap-static/")
+        players = response.json().get('elements', [])
+        teams = response.json().get('teams', [])
+        element_types = response.json().get('element_types', [])
+
+        # Filter and sort players by 'transfers_out_event' (top 5 players)
+        top_transfers_out = sorted(players, key=lambda x: x.get('transfers_out_event', 0), reverse=True)[:5]
+
+        # Format the result
+        result = [{
+            'name': player['web_name'],
+            'position': element_types[player['element_type'] - 1]['singular_name_short'],
+            'team': teams[player['team'] - 1]['short_name'],
+            'transfers_out_event': player.get('transfers_out_event', 0),
+            'photo': f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{player['photo'].replace('.jpg', '')}.png"
+        } for player in top_transfers_out]
+
+        return jsonify(result)
+
+    except Exception as e:
+        logging.error(f"Error fetching top transfers out: {e}", exc_info=True)
+        return jsonify({'error': 'Failed to fetch top transfers out'}, 500)
+
+
+
 
 @app.route('/api/player_status', methods=['GET'])
 def get_player_status():
-    player_status_list = []
-    
-    for player in players:
-        if player['status'] in ['i', 'd', 's', 'u']:  # injured, doubtful, suspended, unavailable
-            player_status = {
+    try:
+        # Fetch the bootstrap static data
+        response = requests.get(f"{BASE_URL}bootstrap-static/")
+        players = response.json().get('elements', [])
+
+        # Filter players based on their status (injured, doubtful, suspended, etc.)
+        player_status_list = [
+            {
                 'name': player['web_name'],
-                'status': player['status'],
+                'status': player['status'],  # Possible values: 'i', 'd', 's', 'u', etc.
                 'news': player['news'],
                 'photo': f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{player['photo'].replace('.jpg', '')}.png"
             }
-            player_status_list.append(player_status)
-    
-    return jsonify(player_status_list)
+            for player in players
+            if player['status'] in ['i', 'd', 's', 'u']  # injured, doubtful, suspended, unavailable
+        ]
+
+        return jsonify(player_status_list)
+
+    except Exception as e:
+        logging.error(f"Error fetching player status: {e}", exc_info=True)
+        return jsonify({'error': 'Failed to fetch player status'}, 500)
+
 
 def fetch_gameweek_score(manager_id, gameweek):
     history_url = f'https://fantasy.premierleague.com/api/entry/{manager_id}/history/'
@@ -1492,6 +1586,8 @@ def get_player_data():
         data = response.json()
         players = {player['id']: player for player in data['elements']}
         teams = {team['id']: team['name'] for team in data['teams']}
+        # Debugging: print the number of players fetched
+        print(f"Fetched {len(players)} players and {len(teams)} teams.")
         return players, teams
     return {}, {}
 
