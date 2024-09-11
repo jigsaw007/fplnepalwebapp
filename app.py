@@ -27,10 +27,29 @@ FIXTURES_URL = f"{BASE_URL}fixtures/"
 ENTRY_URL = f"{BASE_URL}entry/"
 
 # Fetch and cache bootstrap static data
-bootstrap_static_data = requests.get(BOOTSTRAP_STATIC_URL).json()
-teams = {team['id']: team['name'] for team in bootstrap_static_data['teams']}
-element_types = {element['id']: element['plural_name_short'] for element in bootstrap_static_data['element_types']}
-players = bootstrap_static_data['elements']
+try:
+    # Fetch and cache bootstrap static data
+    bootstrap_static_data = requests.get(BOOTSTRAP_STATIC_URL).json()
+    
+    # Log the structure of the fetched data
+    logging.debug(f"Keys in bootstrap_static_data: {bootstrap_static_data.keys()}")
+    
+    # Ensure that elements (player data) exists and is a list
+    if 'elements' not in bootstrap_static_data:
+        logging.error("The 'elements' key is missing from bootstrap_static_data.")
+        players = []  # Initialize to an empty list if the key is missing
+    else:
+        players = bootstrap_static_data.get('elements', [])
+        logging.debug(f"Type of players after initialization: {type(players)}")
+        logging.debug(f"First 5 players: {players[:5] if isinstance(players, list) else 'No players found'}")
+
+except Exception as e:
+    logging.error(f"Error fetching bootstrap static data: {e}")
+    players = []  # Fallback to empty list if fetching fails
+
+
+
+
 
 ITEMS_PER_PAGE = 8
 TRANSFERS_ITEMS_PER_PAGE = 10
@@ -322,38 +341,78 @@ def get_ultimate_standings_full():
         return jsonify({"error": str(e)}), 500
 
 
+# Enable logging
+logging.basicConfig(level=logging.DEBUG)
+
 @app.route('/compare')
 def compare_page():
-    teams = {team['id']: team['name'] for team in bootstrap_static_data['teams']}
-    players = [
-        {
-            'id': player['id'],
-            'first_name': player['first_name'],
-            'second_name': player['second_name'],
-            'team': player['team'],
-            'photo': player['photo'],
-            'web_name': player['web_name'],
-            'now_cost': player['now_cost'],
-            'total_points': player['total_points'],
-            'goals_scored': player['goals_scored'],
-            'assists': player['assists'],
-            'clean_sheets': player['clean_sheets'],
-            'starts': player['starts'],
-            'selected_by_percent': player['selected_by_percent'],
-            'points_per_game': player['points_per_game'],
-        }
-        for player in bootstrap_static_data['elements']
-    ]
-    return render_template('compare.html', players=players, teams=teams)
+    try:
+        # Fetch fresh bootstrap_static_data locally
+        bootstrap_static_data = requests.get(BOOTSTRAP_STATIC_URL).json()
+        
+        # Initialize teams and players data locally for this route
+        teams = {team['id']: team['name'] for team in bootstrap_static_data.get('teams', [])}
+        
+        # Ensure players is initialized correctly from the API data
+        players = [
+            {
+                'id': player['id'],
+                'first_name': player['first_name'],
+                'second_name': player['second_name'],
+                'team': player['team'],
+                'photo': player['photo'],
+                'web_name': player['web_name'],
+                'now_cost': player['now_cost'],
+                'total_points': player['total_points'],
+                'goals_scored': player['goals_scored'],
+                'assists': player['assists'],
+                'clean_sheets': player['clean_sheets'],
+                'starts': player['starts'],
+                'selected_by_percent': player['selected_by_percent'],
+                'points_per_game': player['points_per_game'],
+            }
+            for player in bootstrap_static_data.get('elements', [])
+        ]
+
+        # Check and log the structure of players to confirm data is loaded correctly
+        logging.debug(f"Players data (first 5): {players[:5]}")
+
+        # Render the template with players and teams data
+        return render_template('compare.html', players=players, teams=teams)
+
+    except Exception as e:
+        logging.error(f"Error in compare_page: {e}", exc_info=True)
+        return "An error occurred", 500
 
 @app.route('/api/player/<int:player_id>', methods=['GET'])
 def api_player(player_id):
-    player = next((player for player in players if player['id'] == player_id), None)
-    if player:
+    try:
+        # Fetch fresh bootstrap_static_data locally for this route
+        bootstrap_static_data = requests.get(BOOTSTRAP_STATIC_URL).json()
+        players = bootstrap_static_data.get('elements', [])
+
+        logging.debug(f"Fetching player data for ID {player_id}")
+        
+        # Ensure players is a list
+        if not isinstance(players, list):
+            logging.error(f"Players data is not a list. Type of players: {type(players)}")
+            return jsonify({'error': 'Internal Server Error'}), 500
+
+        # Find the player by ID
+        player = next((p for p in players if p['id'] == player_id), None)
+        if not player:
+            logging.error(f"Player with ID {player_id} not found.")
+            return jsonify({'error': 'Player not found'}), 404
+
+        # Process player photo URL
         player['photo'] = f"p{player['photo'].replace('.jpg', '')}.png"
         return jsonify(player)
-    else:
-        return jsonify({'error': 'Player not found'}), 404
+
+    except Exception as e:
+        logging.error(f"Error fetching player data for ID {player_id}: {e}", exc_info=True)
+        return jsonify({'error': 'Internal Server Error'}), 500
+
+
 
 @app.route('/api/user/<int:user_id>', methods=['GET'])
 def get_user(user_id):

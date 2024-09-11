@@ -127,80 +127,95 @@
             });
 
             function fetchPlayerStats(playerId, playerNumber) {
-                if (!playerId) return;
+    if (!playerId) return;
 
-                $.get(`/api/player/${playerId}`, function(data) {
-                    playerStats[playerNumber] = data;
-                    updatePlayerHeader(playerNumber, data.web_name, data.photo);
-                    updateComparisonTable();
-                });
+    $.get(`/api/player/${playerId}`, function(data) {
+        if (data.error) {
+            console.error("Error fetching player data: " + data.error);
+            alert("Failed to fetch player data.");
+            return;
+        }
+
+        // Pin the full player data, including all fields from the backend
+        playerStats[playerNumber] = data;
+
+        // Update player header (photo and name)
+        updatePlayerHeader(playerNumber, data.web_name, data.photo);
+
+        // Update the comparison table with the player's stats
+        updateComparisonTable();
+    }).fail(function(jqXHR, textStatus, errorThrown) {
+        console.error("Failed to fetch player data: " + textStatus);
+        alert("Error fetching player data: " + textStatus);
+    });
+}
+
+function updatePlayerHeader(playerNumber, webName, photo) {
+    const headerElement = $(`#player${playerNumber}-header`);
+    // Assuming photo is already processed correctly in the backend
+    const photoUrl = `https://resources.premierleague.com/premierleague/photos/players/110x140/${photo}`;
+    headerElement.html(`<img src="${photoUrl}" class="player-photo"><br>${webName}`);
+}
+
+function updateComparisonTable() {
+    $('#comparison-table-body').empty();
+
+    const stats = [
+        'Current Price', 'Total Points', 'Goals', 'Assists', 'Clean Sheets', 'Goals Conceded',
+        'Own Goals', 'Penalties Saved', 'Penalties Missed', 'Yellow Cards', 'Red Cards',
+        'Saves', 'Bonus', 'Starts', 'Selected by percent', 'Points per game'
+    ];
+
+    const statKeys = {
+        'Current Price': 'now_cost',
+        'Total Points': 'total_points',
+        'Goals': 'goals_scored',
+        'Assists': 'assists',
+        'Clean Sheets': 'clean_sheets',
+        'Goals Conceded': 'goals_conceded',
+        'Own Goals': 'own_goals',
+        'Penalties Saved': 'penalties_saved',
+        'Penalties Missed': 'penalties_missed',
+        'Yellow Cards': 'yellow_cards',
+        'Red Cards': 'red_cards',
+        'Saves': 'saves',
+        'Bonus': 'bonus',
+        'Starts': 'starts',
+        'Selected by percent': 'selected_by_percent',
+        'Points per game': 'points_per_game'
+    };
+
+    stats.forEach(function(stat) {
+        const statKey = statKeys[stat];
+        const row = $(`<tr class="${statKey}"><td>${stat}</td></tr>`);
+        $('#comparison-table-body').append(row);
+
+        [1, 2].forEach(function(playerNumber) {
+            let value = playerStats[playerNumber] ? playerStats[playerNumber][statKey] : '-';
+            if (statKey === 'now_cost' && value !== '-') {
+                value = (value / 10).toFixed(1);
+            } else if (statKey === 'selected_by_percent' && value !== '-') {
+                value = value + '%';
             }
+            row.append(`<td class="player-${playerNumber}">${value}</td>`);
+        });
 
-            function updatePlayerHeader(playerNumber, webName, photo) {
-                const headerElement = $(`#player${playerNumber}-header`);
-                const cleanedPhoto = photo.replace(/^p+/, '').split('.')[0];
-                const photoUrl = `https://resources.premierleague.com/premierleague/photos/players/110x140/p${cleanedPhoto}.png`;
-                headerElement.html(`<img src="${photoUrl}" class="player-photo"><br>${webName}`);
+        // Compare values to add the star for better stats
+        if (playerStats[1] && playerStats[2] && statKey !== 'selected_by_percent') {
+            const player1Value = parseFloat(playerStats[1][statKey]);
+            const player2Value = parseFloat(playerStats[2][statKey]);
+
+            if (!isNaN(player1Value) && !isNaN(player2Value)) {
+                if (player1Value > player2Value) {
+                    row.find('.player-1').append(' <i class="fas fa-star better-stat"></i>');
+                } else if (player2Value > player1Value) {
+                    row.find('.player-2').append(' <i class="fas fa-star better-stat"></i>');
+                }
             }
+        }
+    });
+}
 
-            function updateComparisonTable() {
-                $('#comparison-table-body').empty();
-
-                const stats = [
-                    'Current Price', 'Total Points', 'Goals', 'Assists', 'Clean Sheets', 'Goals Conceded',
-                    'Own Goals', 'Penalties Saved', 'Penalties Missed', 'Yellow Cards', 'Red Cards',
-                    'Saves', 'Bonus', 'Starts', 'Selected by percent', 'Points per game'
-                ];
-
-                const statKeys = {
-                    'Current Price': 'now_cost',
-                    'Total Points': 'total_points',
-                    'Goals': 'goals_scored',
-                    'Assists': 'assists',
-                    'Clean Sheets': 'clean_sheets',
-                    'Goals Conceded': 'goals_conceded',
-                    'Own Goals': 'own_goals',
-                    'Penalties Saved': 'penalties_saved',
-                    'Penalties Missed': 'penalties_missed',
-                    'Yellow Cards': 'yellow_cards',
-                    'Red Cards': 'red_cards',
-                    'Saves': 'saves',
-                    'Bonus': 'bonus',
-                    'Starts': 'starts',
-                    'Selected by percent': 'selected_by_percent',
-                    'Points per game': 'points_per_game'
-                };
-
-                stats.forEach(function(stat) {
-                    const statKey = statKeys[stat];
-                    const row = $(`<tr class="${statKey}"><td>${stat}</td></tr>`);
-                    $('#comparison-table-body').append(row);
-
-                    [1, 2].forEach(function(playerNumber) {
-                        let value = playerStats[playerNumber] ? playerStats[playerNumber][statKey] : '-';
-                        if (statKey === 'now_cost' && value !== '-') {
-                            value = (value / 10).toFixed(1);
-                        } else if (statKey === 'selected_by_percent' && value !== '-') {
-                            value = value + '%';
-                        }
-                        row.append(`<td class="player-${playerNumber}">${value}</td>`);
-                    });
-
-                    // Compare values to add the star for better stats
-                    if (playerStats[1] && playerStats[2] && statKey !== 'selected_by_percent') {
-                        const player1Value = parseFloat(playerStats[1][statKey]);
-                        const player2Value = parseFloat(playerStats[2][statKey]);
-
-                        if (!isNaN(player1Value) && !isNaN(player2Value)) {
-                            if (player1Value > player2Value) {
-                                row.find('.player-1').append(' <i class="fas fa-star better-stat"></i>');
-                            } else if (player2Value > player1Value) {
-                                row.find('.player-2').append(' <i class="fas fa-star better-stat"></i>');
-                            }
-                        }
-                    }
-                });
-            }
         });
     </script>
 {% endblock %}
