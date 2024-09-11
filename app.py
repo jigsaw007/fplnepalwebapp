@@ -1090,6 +1090,13 @@ def history_page():
 @app.route('/api/history/<int:team_id>', methods=['GET'])
 def get_history(team_id):
     try:
+        # Fetch fresh bootstrap_static_data for this request
+        bootstrap_static_data = requests.get(BOOTSTRAP_STATIC_URL).json()
+        
+        # Initialize players and teams locally for this request
+        players_data = bootstrap_static_data.get('elements', [])
+        teams_data = {team['id']: team['name'] for team in bootstrap_static_data['teams']}
+        
         page = int(request.args.get('page', 1))
         per_page = int(request.args.get('per_page', 10))
 
@@ -1100,7 +1107,7 @@ def get_history(team_id):
         manager_name = f"{user_data['player_first_name']} {user_data['player_last_name']}"
         team_name = user_data['name']
         region = user_data['player_region_name']
-        favourite_team = teams.get(user_data['favourite_team'], "N/A")
+        favourite_team = teams_data.get(user_data['favourite_team'], "N/A")
         total_points = user_data['summary_overall_points']
         rank = user_data['summary_overall_rank']
 
@@ -1163,7 +1170,7 @@ def get_history(team_id):
                 picks[player['element']] += 1
 
         most_selected_player_id = max(picks, key=picks.get)
-        most_selected_player = next((player for player in players if player['id'] == most_selected_player_id), {})
+        most_selected_player = next((player for player in players_data if player['id'] == most_selected_player_id), {})
         
         most_selected_player_info = {
             "name": most_selected_player.get('web_name', 'Unknown'),
@@ -1189,6 +1196,7 @@ def get_history(team_id):
     except requests.exceptions.RequestException as e:
         logging.error(f"Error fetching history for team {team_id}: {e}")
         return jsonify({"error": "Failed to fetch history"}), 500
+
 
 @app.route('/api/transfers/<int:team_id>', methods=['GET'])
 def get_transfers_data(team_id):
