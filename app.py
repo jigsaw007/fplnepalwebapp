@@ -785,6 +785,13 @@ def whatif_page():
 @app.route('/api/whatif/<int:team_id>', methods=['GET'])
 def get_whatif_points(team_id):
     try:
+        # Fetch fresh bootstrap_static_data for this request
+        bootstrap_static_data = requests.get(BOOTSTRAP_STATIC_URL).json()
+
+        # Initialize players and element types locally for this request
+        players = bootstrap_static_data.get('elements', [])
+        element_types = {element['id']: element['plural_name_short'] for element in bootstrap_static_data['element_types']}
+
         # Fetch initial squad and captain from Gameweek 1
         initial_squad_response = requests.get(f"{ENTRY_URL}{team_id}/event/1/picks/")
         initial_squad_response.raise_for_status()
@@ -862,6 +869,7 @@ def get_whatif_points(team_id):
     except Exception as e:
         app.logger.error(f"Error calculating what if points for team {team_id}: {e}")
         return jsonify({"error": "Failed to calculate what if points"}), 500
+
 
 @app.route('/api/classic-standings', methods=['GET'])
 def get_classic_standings():
