@@ -182,43 +182,43 @@ def score_player(player):
     
     return total_score
 
-@app.route('/api/feature_player', methods=['GET'])
-def get_feature_player():
-    try:
-        gameweek_data = []
-        for event_id in range(34, 39):  # Last 5 gameweeks
-            response = requests.get(f"{BASE_URL}event/{event_id}/live/")
-            response.raise_for_status()
-            gameweek_data.append(response.json())
+# @app.route('/api/feature_player', methods=['GET'])
+# def get_feature_player():
+#     try:
+#         gameweek_data = []
+#         for event_id in range(34, 39):  # Last 5 gameweeks
+#             response = requests.get(f"{BASE_URL}event/{event_id}/live/")
+#             response.raise_for_status()
+#             gameweek_data.append(response.json())
 
-        best_player = None
-        best_points = 0
+#         best_player = None
+#         best_points = 0
 
-        for gameweek in gameweek_data:
-            for player in gameweek['elements']:
-                player_points = player['stats']['total_points']
-                if player_points > best_points:
-                    best_points = player_points
-                    best_player = player
+#         for gameweek in gameweek_data:
+#             for player in gameweek['elements']:
+#                 player_points = player['stats']['total_points']
+#                 if player_points > best_points:
+#                     best_points = player_points
+#                     best_player = player
 
-        if best_player:
-            player_info = next(p for p in bootstrap_static_data['elements'] if p['id'] == best_player['id'])
-            team_name = teams[player_info['team']]
-            feature_player = {
-                'name': player_info['web_name'],
-                'full_name': f"{player_info['first_name']} {player_info['second_name']}",
-                'team': team_name,
-                'photo': f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{player_info['photo'].replace('.jpg', '')}.png",
-                'goals': best_player['stats']['goals_scored'],
-                'assists': best_player['stats']['assists'],
-                'total_points': best_player['stats']['total_points']
-            }
-            return jsonify(feature_player)
-        else:
-            return jsonify({'error': 'No player found'}), 404
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Error fetching feature player: {e}")
-        return jsonify({"error": "Failed to fetch feature player"}), 500
+#         if best_player:
+#             player_info = next(p for p in bootstrap_static_data['elements'] if p['id'] == best_player['id'])
+#             team_name = teams[player_info['team']]
+#             feature_player = {
+#                 'name': player_info['web_name'],
+#                 'full_name': f"{player_info['first_name']} {player_info['second_name']}",
+#                 'team': team_name,
+#                 'photo': f"https://resources.premierleague.com/premierleague/photos/players/110x140/p{player_info['photo'].replace('.jpg', '')}.png",
+#                 'goals': best_player['stats']['goals_scored'],
+#                 'assists': best_player['stats']['assists'],
+#                 'total_points': best_player['stats']['total_points']
+#             }
+#             return jsonify(feature_player)
+#         else:
+#             return jsonify({'error': 'No player found'}), 404
+#     except requests.exceptions.RequestException as e:
+#         logging.error(f"Error fetching feature player: {e}")
+#         return jsonify({"error": "Failed to fetch feature player"}), 500
 
 
 

@@ -944,28 +944,28 @@
 
         $(document).ready(function() {
     // Fetch and display feature player
-    $.get('/api/feature_player', function(data) {
-        if (data.error) {
-            $('#feature-player').html(`<div class="alert alert-danger">${data.error}</div>`);
-        } else {
-            const playerHtml = `
-                <div class="row">
-                    <div class="col-md-4">
-                        <img src="${data.photo}" alt="${data.name}" class="img-fluid">
-                    </div>
-                    <div class="col-md-8">
-                        <h3>${data.name}</h3>
-                        <p><strong>Full Name:</strong> ${data.full_name}</p>
-                        <p><strong>Team:</strong> ${data.team}</p>
-                        <p><strong>Goals:</strong> ${data.goals}</p>
-                        <p><strong>Assists:</strong> ${data.assists}</p>
-                        <p><strong>Total Points:</strong> ${data.total_points}</p>
-                    </div>
-                </div>
-            `;
-            $('#feature-player').html(playerHtml);
-        }
-    });
+    // $.get('/api/feature_player', function(data) {
+    //     if (data.error) {
+    //         $('#feature-player').html(`<div class="alert alert-danger">${data.error}</div>`);
+    //     } else {
+    //         const playerHtml = `
+    //             <div class="row">
+    //                 <div class="col-md-4">
+    //                     <img src="${data.photo}" alt="${data.name}" class="img-fluid">
+    //                 </div>
+    //                 <div class="col-md-8">
+    //                     <h3>${data.name}</h3>
+    //                     <p><strong>Full Name:</strong> ${data.full_name}</p>
+    //                     <p><strong>Team:</strong> ${data.team}</p>
+    //                     <p><strong>Goals:</strong> ${data.goals}</p>
+    //                     <p><strong>Assists:</strong> ${data.assists}</p>
+    //                     <p><strong>Total Points:</strong> ${data.total_points}</p>
+    //                 </div>
+    //             </div>
+    //         `;
+    //         $('#feature-player').html(playerHtml);
+    //     }
+    // });
 
     // Fetch and display weekly squad
     $.get('/api/weekly_squad', function(data) {
