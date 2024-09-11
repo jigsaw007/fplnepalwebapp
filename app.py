@@ -429,6 +429,14 @@ def squad_page():
 @app.route('/api/squad/<int:team_id>', methods=['GET'])
 def get_squad(team_id):
     try:
+        # Fetch fresh bootstrap_static_data for this request
+        bootstrap_static_data = requests.get(BOOTSTRAP_STATIC_URL).json()
+        
+        # Initialize players and element types locally for this request
+        players_data = bootstrap_static_data.get('elements', [])
+        element_types = {element['id']: element['plural_name_short'] for element in bootstrap_static_data['element_types']}
+        
+        # Fetch user data for the team
         user_data_response = requests.get(f"{ENTRY_URL}{team_id}/")
         user_data_response.raise_for_status()
         user_data = user_data_response.json()
@@ -436,22 +444,27 @@ def get_squad(team_id):
         manager_name = f"{user_data['player_first_name']} {user_data['player_last_name']}"
         team_name = user_data['name']
 
+        # Fetch gameweek history to get the latest event (gameweek)
         history_response = requests.get(f"{ENTRY_URL}{team_id}/history/")
         history_response.raise_for_status()
         history_data = history_response.json()
         latest_event = history_data['current'][-1]['event']
 
+        # Fetch the current squad for the latest gameweek
         response = requests.get(f"{ENTRY_URL}{team_id}/event/{latest_event}/picks/")
         response.raise_for_status()
         squad_data = response.json()
 
+        # Fetch live gameweek data for player points
         live_response = requests.get(f"{BASE_URL}event/{latest_event}/live/")
         live_response.raise_for_status()
         live_data = live_response.json()
 
+        # Prepare the player data with points and other details
         players = []
         for pick in squad_data['picks']:
-            player = next(p for p in bootstrap_static_data['elements'] if p['id'] == pick['element'])
+            # Find the player in the locally fetched players data
+            player = next(p for p in players_data if p['id'] == pick['element'])
             player_points = live_data['elements'][player['id'] - 1]['stats']['total_points']
             players.append({
                 'name': player['web_name'],
@@ -462,6 +475,7 @@ def get_squad(team_id):
                 'is_captain': pick['is_captain']
             })
 
+        # Return the squad data with manager and team info
         return jsonify({
             'manager_name': manager_name,
             'team_name': team_name,
@@ -470,6 +484,7 @@ def get_squad(team_id):
     except requests.exceptions.RequestException as e:
         logging.error(f"Error fetching squad data: {e}")
         return jsonify({"error": "Failed to fetch squad data"}), 500
+
 
 @app.route('/api/optimize/<int:team_id>', methods=['GET'])
 def optimize_squad(team_id):
