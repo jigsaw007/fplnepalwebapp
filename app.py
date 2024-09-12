@@ -1759,5 +1759,22 @@ def squad_sheet_page():
 
     return render_template('squadsheet.html', squads=squads)
 
+@app.route('/api/team_logos', methods=['GET'])
+def get_team_logos():
+    try:
+        # Fetch teams data from bootstrap-static
+        response = requests.get(f"{BASE_URL}bootstrap-static/")
+        data = response.json()
+
+        # Extract team names and logos
+        teams = data.get('teams', [])
+        team_logos = [{'name': team['name'], 'logo_url': f"https://resources.premierleague.com/premierleague/badges/t{team['id']}.png"} for team in teams]
+
+        return jsonify(team_logos)
+    except Exception as e:
+        logging.error(f"Error fetching team logos: {e}")
+        return jsonify({"error": "Failed to fetch team logos"}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)

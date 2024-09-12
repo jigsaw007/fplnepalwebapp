@@ -162,6 +162,17 @@
             $('#global-loader').fadeOut();
             $('#content-container').removeClass('blurred');
         });
+        $(document).ready(function() {
+    // Fetch team logos and display them
+    $.get('/api/team_logos', function(data) {
+        let logosHtml = '';
+        data.forEach(function(team) {
+            logosHtml += `<img src="${team.logo_url}" alt="${team.name}" class="team-logo">`;
+        });
+        $('#team-logos').html(logosHtml);
+    });
+});
+
     </script>
 </body>
 </html>
