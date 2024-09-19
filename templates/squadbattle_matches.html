@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Squadbattle Matches
+{% endblock %}
+
+{% block content %}
+<style>
+   #doc-title{
+    display: none;
+   }
+   #sheet-menu {
+    font-size: 13px;
+    margin: 6px 0 0;
+    padding: 0 0 5px;
+}
+
+#sheet-menu li {
+    display: inline-block !important;
+    list-style-type: none !important;
+    margin: 0 5px !important;
+    padding: 8px 12px !important;
+    background-color: #f1f1f1 !important;
+    border-radius: 5px;
+    border: 1px solid #ddd !important;
+    cursor: pointer;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+}
+a:hover{
+    text-decoration: none;
+}
+
+#sheet-menu li:hover {
+    background-color: #e0e0e0;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+#top-bar #sheet-menu li.active {
+    border-bottom: 0;
+}
+
+#sheet-menu li.active {
+    background-color: #fff;
+    font-weight: bold;
+    border: 1px solid #999;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+.grid-container{
+    min-height: 1080px;
+}
+#footer{
+    display: none;
+}
+</style>
+    <div class="container">
+        <h2>Squadbattle Matches</h2>
+        <div class="table-responsive">
+            {{ sheet_html_content|safe }}  <!-- This will render the fetched HTML content -->
+        </div>
+    </div>
+{% endblock %}
