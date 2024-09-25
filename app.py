@@ -699,46 +699,46 @@ def get_fixtures_for_event(event):
         return jsonify({"error": "Failed to fetch fixtures"}), 500
 
 
-# @app.route('/api/highest_scorers/<int:gameweek>', methods=['GET'])
-# def get_highest_scorers(gameweek):
-#     highest_scorers = {}
-#     try:
-#         for name, league_id in LEAGUE_IDS.items():
-#             response = requests.get(f"https://fantasy.premierleague.com/api/leagues-h2h-matches/league/{league_id}/?page=1&event={gameweek}")
-#             response.raise_for_status()
-#             league_data = response.json()
-#             matches = league_data['results']
-#             highest_score = 0
-#             highest_scorer_entries = []
+@app.route('/api/highest_scorers/<int:gameweek>', methods=['GET'])
+def get_highest_scorers(gameweek):
+    highest_scorers = {}
+    try:
+        for name, league_id in LEAGUE_IDS.items():
+            response = requests.get(f"https://fantasy.premierleague.com/api/leagues-h2h-matches/league/{league_id}/?page=1&event={gameweek}")
+            response.raise_for_status()
+            league_data = response.json()
+            matches = league_data['results']
+            highest_score = 0
+            highest_scorer_entries = []
 
-#             for match in matches:
-#                 entry_1_points = match['entry_1_points']
-#                 entry_2_points = match['entry_2_points']
+            for match in matches:
+                entry_1_points = match['entry_1_points']
+                entry_2_points = match['entry_2_points']
 
-#                 if entry_1_points > highest_score:
-#                     highest_score = entry_1_points
-#                     highest_scorer_entries = [match['entry_1_player_name']]
-#                 elif entry_1_points == highest_score:
-#                     highest_scorer_entries.append(match['entry_1_player_name'])
+                if entry_1_points > highest_score:
+                    highest_score = entry_1_points
+                    highest_scorer_entries = [match['entry_1_player_name']]
+                elif entry_1_points == highest_score:
+                    highest_scorer_entries.append(match['entry_1_player_name'])
 
-#                 if entry_2_points > highest_score:
-#                     highest_score = entry_2_points
-#                     highest_scorer_entries = [match['entry_2_player_name']]
-#                 elif entry_2_points == highest_score:
-#                     highest_scorer_entries.append(match['entry_2_player_name'])
+                if entry_2_points > highest_score:
+                    highest_score = entry_2_points
+                    highest_scorer_entries = [match['entry_2_player_name']]
+                elif entry_2_points == highest_score:
+                    highest_scorer_entries.append(match['entry_2_player_name'])
 
-#             highest_scorers[name] = {
-#                 "score": highest_score,
-#                 "players": highest_scorer_entries
-#             }
+            highest_scorers[name] = {
+                "score": highest_score,
+                "players": highest_scorer_entries
+            }
 
-#         return jsonify(highest_scorers)
-#     except requests.exceptions.RequestException as e:
-#         app.logger.error(f"Error fetching highest scorers: {e}")
-#         return jsonify({"error": "Failed to fetch highest scorers"}), 500
-#     except Exception as e:
-#         app.logger.error(f"Unexpected error: {e}")
-#         return jsonify({"error": "An unexpected error occurred"}), 500
+        return jsonify(highest_scorers)
+    except requests.exceptions.RequestException as e:
+        app.logger.error(f"Error fetching highest scorers: {e}")
+        return jsonify({"error": "Failed to fetch highest scorers"}), 500
+    except Exception as e:
+        app.logger.error(f"Unexpected error: {e}")
+        return jsonify({"error": "An unexpected error occurred"}), 500
 
 @app.route('/fixtures')
 def fixtures_page():
