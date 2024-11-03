@@ -1,0 +1,8 @@
+{
+  "gameweeks": {
+      "1": 1,  // Eliminate 1 manager in Gameweek 1
+      "2": 1,  // Eliminate 1 manager in Gameweek 2
+      "3": 1   // Eliminate 1 manager in Gameweek 3
+  },
+  "eliminated": []  // This will be filled dynamically
+}

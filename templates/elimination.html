@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Elimination Standings{% endblock %}
+
+{% block content %}
+<style>
+    .highlight-lowest {
+        background-color: lightcoral !important;
+    }
+    .table td, .table th {
+        padding: 12px;
+        border-bottom: 1px solid #ddd;
+        text-align: center;
+    }
+    .player-column, .team-column {
+        width: 150px;
+        white-space: nowrap;
+    }
+</style>
+
+<div class="container-fluid">
+    <h1 class="text-center">Elimination League Standings</h1>
+    
+    <div class="table-responsive">
+        <table class="table table-bordered" id="elimination-table">
+            <thead>
+                <tr>
+                    <th class="player-column">Player</th>
+                    <th class="team-column">Team</th>
+                    <th>Division</th>
+                    {% for gw in range(1, current_gameweek + 1) %}
+                    <th>GW {{ gw }}</th>
+                    {% endfor %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                <tr>
+                    <td class="player-column">{{ entry.player_name }}</td>
+                    <td class="team-column">{{ entry.team_name }}</td>
+                    <td>{{ entry.division }}</td>
+                    {% for score in entry.gw_scores %}
+                    <td class="gw-score" data-gameweek="{{ loop.index }}" data-score="{{ score }}">{{ score or '' }}</td>
+                    {% endfor %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Include DataTables for sorting functionality -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/fixedcolumns/3.3.2/js/dataTables.fixedColumns.min.js"></script>
+
+<script>
+    $(document).ready(function () {
+        // Initialize DataTable with sorting enabled for all columns
+        $('#elimination-table').DataTable({
+            "scrollX": true,
+            "paging": false,  // Disable pagination if not needed
+            "ordering": true, // Enable ordering (sorting)
+            "fixedColumns": {
+                leftColumns: 3  // Freeze the first three columns
+            }
+        });
+
+        // Fetch the JSON data to determine how many players to highlight per gameweek
+        $.getJSON('/static/elimination.json', function(data) {
+            const gameweeks = data.gameweeks;
+            console.log("Elimination JSON Data: ", gameweeks);  // Debugging
+
+            // For each gameweek, find the lowest scores and highlight those players
+            for (const gw in gameweeks) {
+                const numToHighlight = gameweeks[gw];  // Number of players to highlight for this gameweek
+                console.log(`Processing Gameweek ${gw}, Highlighting ${numToHighlight} managers`);
+
+                // Get all the scores for this gameweek
+                let scores = [];
+                $(`[data-gameweek="${gw}"]`).each(function() {
+                    const score = parseInt($(this).data('score')) || 0;  // Handle empty or invalid scores
+                    scores.push({ element: this, score: score });
+                });
+
+                // Debugging: Print all scores for this gameweek
+                console.log(`Scores for Gameweek ${gw}:`, scores);
+
+                // Sort by score (ascending) and highlight the lowest ones
+                scores.sort((a, b) => a.score - b.score);
+                
+                // Debugging: Print sorted scores
+                console.log(`Sorted Scores for Gameweek ${gw}:`, scores);
+
+                for (let i = 0; i < numToHighlight; i++) {
+                    $(scores[i].element).addClass('highlight-lowest');
+                    console.log(`Highlighted manager with score ${scores[i].score} in Gameweek ${gw}`);
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

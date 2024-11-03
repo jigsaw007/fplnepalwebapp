@@ -9,6 +9,7 @@ import io
 import urllib.parse
 import json
 import os
+import numpy as np
 
 app = Flask(__name__, template_folder='templates')
 
@@ -1801,9 +1802,70 @@ def squadbattle_matches_page():
         app.logger.error(f"Error fetching squad battle matches data: {e}", exc_info=True)
         return "An error occurred while fetching squad battle matches data.", 500
 
+# Define Division IDs and their corresponding names
+DIVISIONS = {
+    "Div A": 446714,
+    "Div B": 446717,
+    "Div C": 446720,
+    "Div D": 446723,
+    "Div E": 446724,
+    "Div F": 446727
+}
 
+@app.route('/elimination')
+def elimination_page():
+    current_gameweek = 38  # Assuming you're fetching all gameweeks up to 38
+    all_entries = []  # To store all the entries across divisions
 
+    # Fetch data for each division and each gameweek
+    for div_name, div_id in DIVISIONS.items():
+        # Initialize a dictionary to store player data and gameweek scores
+        division_players = {}
 
+        for gw in range(1, current_gameweek + 1):  # Loop through Gameweeks 1 to 38
+            url = f"https://fantasy.premierleague.com/api/leagues-h2h-matches/league/{div_id}/?page=1&event={gw}"
+            
+            try:
+                response = requests.get(url)
+                response.raise_for_status()  # Ensure we catch any request errors
+                data = response.json()
+            except requests.exceptions.RequestException as e:
+                print(f"Error fetching data for Division {div_name}, GW {gw}: {e}")
+                continue  # Skip to the next gameweek if there's an error
+            
+            # Loop over matches and extract relevant info
+            for match in data.get('results', []):  # Use .get() to safely access 'results'
+                entry_1 = {
+                    'player_name': match['entry_1_player_name'],
+                    'team_name': match['entry_1_name'],
+                    'division': div_name,
+                    'gw_scores': [None] * current_gameweek  # Initialize gameweek scores with None
+                }
+                entry_2 = {
+                    'player_name': match['entry_2_player_name'],
+                    'team_name': match['entry_2_name'],
+                    'division': div_name,
+                    'gw_scores': [None] * current_gameweek  # Initialize gameweek scores with None
+                }
+
+                # Update the player info and store their gameweek scores
+                if entry_1['player_name'] in division_players:
+                    division_players[entry_1['player_name']]['gw_scores'][gw-1] = match['entry_1_points']
+                else:
+                    entry_1['gw_scores'][gw-1] = match['entry_1_points']
+                    division_players[entry_1['player_name']] = entry_1
+
+                if entry_2['player_name'] in division_players:
+                    division_players[entry_2['player_name']]['gw_scores'][gw-1] = match['entry_2_points']
+                else:
+                    entry_2['gw_scores'][gw-1] = match['entry_2_points']
+                    division_players[entry_2['player_name']] = entry_2
+
+        # Add the players' data to the overall entries list
+        all_entries.extend(division_players.values())
+
+    # Pass the data to the template
+    return render_template('elimination.html', entries=all_entries, current_gameweek=current_gameweek)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
