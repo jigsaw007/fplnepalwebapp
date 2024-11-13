@@ -5,6 +5,15 @@
 {% block content %}
 <div class="container my-4">
     <h2 class="mb-4">Tie Analyzer</h2>
+        <!-- Tie-Break Rules Section -->
+        <div class="alert alert-info p-3" role="alert">
+            <h5>If there is a tie, the following tie-breaks will be applied until a winner is found:</h5>
+            <ul class="mb-0">
+                <li><strong>Most goals scored in the Gameweek</strong></li>
+                <li><strong>Fewest goals conceded in the Gameweek</strong></li>
+                <li><strong>Random Draw</strong> (Will be drawn live)</li>
+            </ul>
+        </div>
     <form id="tieAnalyzerForm">
         <div class="form-row">
             <div class="form-group col-md-4">
