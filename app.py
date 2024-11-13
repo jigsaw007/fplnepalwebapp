@@ -1867,5 +1867,95 @@ def elimination_page():
     # Pass the data to the template
     return render_template('elimination.html', entries=all_entries, current_gameweek=current_gameweek)
 
+#tie Analyzer
+
+@app.route('/tieanalyzer')
+def tie_analyzer_page():
+    return render_template('tieanalyzer.html')
+
+@app.route('/api/tieanalyze', methods=['GET'])
+def analyze_teams():
+    team_id1 = request.args.get('team_id1')
+    team_id2 = request.args.get('team_id2')
+    gameweek = request.args.get('gameweek')
+    
+    try:
+        # Fetch static player data to map player IDs to names
+        bootstrap_data = requests.get(BOOTSTRAP_STATIC_URL)
+        bootstrap_data.raise_for_status()
+        players_data = bootstrap_data.json()['elements']
+        
+        # Create a dictionary to map player IDs to names and other static info
+        player_info_map = {player['id']: player for player in players_data}
+
+        def get_team_stats(team_id):
+            # Fetch manager and team information
+            user_data_url = f"{ENTRY_URL}{team_id}/"
+            user_response = requests.get(user_data_url)
+            user_response.raise_for_status()
+            user_data = user_response.json()
+            manager_name = f"{user_data['player_first_name']} {user_data['player_last_name']}"
+            team_name = user_data['name']
+
+            # Fetch squad data for the selected gameweek
+            picks_url = f"{ENTRY_URL}{team_id}/event/{gameweek}/picks/"
+            picks_response = requests.get(picks_url)
+            picks_response.raise_for_status()
+            picks = picks_response.json()['picks']
+            
+            # Fetch live data for the gameweek stats
+            live_data_url = f"{BASE_URL}event/{gameweek}/live/"
+            live_data_response = requests.get(live_data_url)
+            live_data_response.raise_for_status()
+            live_data = live_data_response.json()
+            
+            goals_scored = 0
+            goals_conceded = 0
+            players_scored = []
+            players_conceded = []
+
+            for pick in picks:
+                if pick['multiplier'] > 0:  # Exclude bench players
+                    player_id = pick['element']
+                    player_stats = live_data['elements'][player_id - 1]['stats']
+                    player_goals = player_stats['goals_scored']
+                    player_conceded = player_stats['goals_conceded']
+                    
+                    # Get player name from static data
+                    player_name = player_info_map[player_id]['web_name']
+
+                    # Track goals scored and conceded
+                    goals_scored += player_goals
+                    goals_conceded += player_conceded
+                    if player_goals > 0:
+                        players_scored.append({
+                            'name': player_name,
+                            'goals': player_goals
+                        })
+                    if player_conceded > 0:
+                        players_conceded.append({
+                            'name': player_name,
+                            'conceded': player_conceded
+                        })
+
+            return {
+                'manager_name': manager_name,
+                'team_name': team_name,
+                'goals_scored': goals_scored,
+                'goals_conceded': goals_conceded,
+                'players_scored': players_scored,
+                'players_conceded': players_conceded
+            }
+        
+        team1_stats = get_team_stats(team_id1)
+        team2_stats = get_team_stats(team_id2)
+        
+        return jsonify({'team1': team1_stats, 'team2': team2_stats})
+    
+    except Exception as e:
+        logging.error(f"Error analyzing teams: {e}")
+        return jsonify({"error": "Failed to analyze teams"}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
