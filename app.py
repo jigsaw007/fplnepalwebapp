@@ -1956,14 +1956,15 @@ def analyze_teams():
         logging.error(f"Error analyzing teams: {e}")
         return jsonify({"error": "Failed to analyze teams"}), 500
 
-# Route for ultimate-history page
-@app.route('/ultimate-history')
+
+# Route for League-History-Page
+@app.route('/league-history')
 def ultimate_history():
-    return render_template('ultimate-history.html')
+    return render_template('league-history.html')
 
 # API endpoint to fetch Gameweek scorers
-def fetch_standings(page):
-    url = f"https://fantasy.premierleague.com/api/leagues-classic/420581/standings/?page_standings={page}"
+def fetch_standings(league_id, page):
+    url = f"https://fantasy.premierleague.com/api/leagues-classic/{league_id}/standings/?page_standings={page}"
     response = requests.get(url)
     return response.json()
 
@@ -1972,11 +1973,11 @@ def fetch_manager_history(manager_id):
     response = requests.get(url)
     return response.json()
 
-@app.route('/api/gameweek-scorers/<int:gameweek>')
-def gameweek_scorers(gameweek):
+@app.route('/api/gameweek-scorers/<int:league_id>/<int:gameweek>')
+def gameweek_scorers(league_id, gameweek):
     standings = []
     for page in range(1, 5):  # Assuming 4 pages of standings
-        data = fetch_standings(page)
+        data = fetch_standings(league_id, page)
         standings.extend(data['standings']['results'])
 
     scores = []

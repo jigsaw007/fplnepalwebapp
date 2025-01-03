@@ -1,11 +1,19 @@
 <!-- ultimate-history.html -->
 {% extends "base.html" %}
 
-{% block title %}Ultimate History{% endblock %}
+{% block title %}Classic | Ultimate League History{% endblock %}
 
 {% block content %}
 <div class="container mt-5">
-    <h2 class="text-center">Ultimate History</h2>
+    <h2 class="text-center">Classic | Ultimate League History</h2>
+
+    <div class="form-group">
+        <label for="league-select">Select League:</label>
+        <select id="league-select" class="form-control">
+            <option value="420581">Ultimate League</option>
+            <option value="420585">Classic League</option>
+        </select>
+    </div>
 
     <div class="form-group">
         <label for="gameweek-select">Select Gameweek:</label>
@@ -49,9 +57,9 @@ $(document).ready(function() {
         $('#loading-bar').hide();
     }
 
-    function loadGameweekData(gameweek) {
+    function loadGameweekData(leagueId, gameweek) {
         showLoadingBar();
-        $.get(`/api/gameweek-scorers/${gameweek}`, function(data) {
+        $.get(`/api/gameweek-scorers/${leagueId}/${gameweek}`, function(data) {
             renderTable(data);
             hideLoadingBar();
         });
@@ -92,17 +100,19 @@ $(document).ready(function() {
             currentSort.column = column;
             currentSort.order = "asc";
         }
+        const leagueId = $('#league-select').val();
         const selectedGameweek = $('#gameweek-select').val();
-        loadGameweekData(selectedGameweek);
+        loadGameweekData(leagueId, selectedGameweek);
     });
 
-    $('#gameweek-select').change(function() {
-        const selectedGameweek = $(this).val();
-        loadGameweekData(selectedGameweek);
+    $('#gameweek-select, #league-select').change(function() {
+        const leagueId = $('#league-select').val();
+        const selectedGameweek = $('#gameweek-select').val();
+        loadGameweekData(leagueId, selectedGameweek);
     });
 
     // Load data for Gameweek 1 by default
-    loadGameweekData(1);
+    loadGameweekData($('#league-select').val(), 1);
 });
 </script>
 {% endblock %}
