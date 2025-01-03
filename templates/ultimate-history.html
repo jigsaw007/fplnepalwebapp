@@ -1,0 +1,108 @@
+<!-- ultimate-history.html -->
+{% extends "base.html" %}
+
+{% block title %}Ultimate History{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2 class="text-center">Ultimate History</h2>
+
+    <div class="form-group">
+        <label for="gameweek-select">Select Gameweek:</label>
+        <select id="gameweek-select" class="form-control">
+            {% for i in range(1, 39) %}
+                <option value="{{ i }}">Gameweek {{ i }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div id="loading-bar" class="text-center mt-4" style="display: none;">
+        <i class="fas fa-spinner fa-spin fa-3x"></i>
+        <p>Loading data...</p>
+    </div>
+
+    <table class="table table-bordered mt-4" id="scores-table">
+        <thead>
+            <tr>
+                <th>Manager</th>
+                <th>Team</th>
+                <th data-sort="score" class="sortable">Score <i class="fas fa-sort"></i></th>
+                <th data-sort="negative_points" class="sortable">Negative Points <i class="fas fa-sort"></i></th>
+                <th data-sort="adjusted_score" class="sortable">Adjusted Score <i class="fas fa-sort"></i></th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Data will be populated here -->
+        </tbody>
+    </table>
+</div>
+
+<script>
+$(document).ready(function() {
+    let currentSort = { column: "adjusted_score", order: "desc" };
+
+    function showLoadingBar() {
+        $('#loading-bar').show();
+    }
+
+    function hideLoadingBar() {
+        $('#loading-bar').hide();
+    }
+
+    function loadGameweekData(gameweek) {
+        showLoadingBar();
+        $.get(`/api/gameweek-scorers/${gameweek}`, function(data) {
+            renderTable(data);
+            hideLoadingBar();
+        });
+    }
+
+    function renderTable(data) {
+        const tableBody = $('#scores-table tbody');
+        tableBody.empty();
+
+        // Sort data based on the currentSort
+        data.sort((a, b) => {
+            if (currentSort.order === "asc") {
+                return a[currentSort.column] - b[currentSort.column];
+            } else {
+                return b[currentSort.column] - a[currentSort.column];
+            }
+        });
+
+        data.forEach(row => {
+            const adjustedScore = row.score - (row.negative_points || 0);
+            tableBody.append(`
+                <tr>
+                    <td>${row.manager}</td>
+                    <td>${row.team}</td>
+                    <td>${row.score}</td>
+                    <td>${row.negative_points || 0}</td>
+                    <td>${adjustedScore}</td>
+                </tr>
+            `);
+        });
+    }
+
+    $('.sortable').on('click', function() {
+        const column = $(this).data('sort');
+        if (currentSort.column === column) {
+            currentSort.order = currentSort.order === "asc" ? "desc" : "asc";
+        } else {
+            currentSort.column = column;
+            currentSort.order = "asc";
+        }
+        const selectedGameweek = $('#gameweek-select').val();
+        loadGameweekData(selectedGameweek);
+    });
+
+    $('#gameweek-select').change(function() {
+        const selectedGameweek = $(this).val();
+        loadGameweekData(selectedGameweek);
+    });
+
+    // Load data for Gameweek 1 by default
+    loadGameweekData(1);
+});
+</script>
+{% endblock %}
