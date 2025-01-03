@@ -1956,6 +1956,48 @@ def analyze_teams():
         logging.error(f"Error analyzing teams: {e}")
         return jsonify({"error": "Failed to analyze teams"}), 500
 
+# Route for ultimate-history page
+@app.route('/ultimate-history')
+def ultimate_history():
+    return render_template('ultimate-history.html')
+
+# API endpoint to fetch Gameweek scorers
+def fetch_standings(page):
+    url = f"https://fantasy.premierleague.com/api/leagues-classic/420581/standings/?page_standings={page}"
+    response = requests.get(url)
+    return response.json()
+
+def fetch_manager_history(manager_id):
+    url = f"https://fantasy.premierleague.com/api/entry/{manager_id}/history/"
+    response = requests.get(url)
+    return response.json()
+
+@app.route('/api/gameweek-scorers/<int:gameweek>')
+def gameweek_scorers(gameweek):
+    standings = []
+    for page in range(1, 5):  # Assuming 4 pages of standings
+        data = fetch_standings(page)
+        standings.extend(data['standings']['results'])
+
+    scores = []
+    for manager in standings:
+        manager_id = manager['entry']
+        history = fetch_manager_history(manager_id)
+        gw_scores = history['current']
+
+        for gw in gw_scores:
+            if gw['event'] == gameweek:
+                scores.append({
+                    'manager': manager['player_name'],
+                    'team': manager['entry_name'],
+                    'score': gw['points'],
+                    'negative_points': gw.get('event_transfers_cost', 0),
+                    'adjusted_score': gw['points'] - gw.get('event_transfers_cost', 0)
+                })
+                break
+
+    scores.sort(key=lambda x: x['adjusted_score'], reverse=True)
+    return jsonify(scores)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
