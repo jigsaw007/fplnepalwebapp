@@ -2002,6 +2002,5 @@ def analyze_teams():
     except Exception as e:
         logging.error(f"Error analyzing teams: {e}")
         return jsonify({"error": "Failed to analyze teams"}), 500
-
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
