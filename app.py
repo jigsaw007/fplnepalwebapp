@@ -1878,15 +1878,17 @@ def analyze_teams():
     team_id1 = request.args.get('team_id1')
     team_id2 = request.args.get('team_id2')
     gameweek = request.args.get('gameweek')
-    
+
     try:
-        # Fetch static player data to map player IDs to names
+        # Fetch static player data (includes club mapping)
         bootstrap_data = requests.get(BOOTSTRAP_STATIC_URL)
         bootstrap_data.raise_for_status()
         players_data = bootstrap_data.json()['elements']
-        
-        # Create a dictionary to map player IDs to names and other static info
+        teams_data = bootstrap_data.json()['teams']
+
+        # Map player ID to team ID
         player_info_map = {player['id']: player for player in players_data}
+        team_name_map = {team['id']: team['name'] for team in teams_data}
 
         def get_team_stats(team_id):
             # Fetch manager and team information
@@ -1900,15 +1902,61 @@ def analyze_teams():
             # Fetch squad data for the selected gameweek
             picks_url = f"{ENTRY_URL}{team_id}/event/{gameweek}/picks/"
             picks_response = requests.get(picks_url)
+
+            if picks_response.status_code == 404:
+                logging.error(f"Gameweek {gameweek} picks not found for team {team_id}. Possibly not started.")
+                return {
+                    'manager_name': manager_name,
+                    'team_name': team_name,
+                    'goals_scored': 0,
+                    'goals_conceded': 0,
+                    'players_scored': [],
+                    'players_conceded': [],
+                    'error': f"Gameweek {gameweek} data not available."
+                }
+
             picks_response.raise_for_status()
             picks = picks_response.json()['picks']
-            
-            # Fetch live data for the gameweek stats
+
+            # Fetch all fixtures for the gameweek to get team goals scored & conceded
+            fixtures_url = f"{BASE_URL}fixtures/?event={gameweek}"
+            fixtures_response = requests.get(fixtures_url)
+            fixtures_response.raise_for_status()
+            fixtures = fixtures_response.json()
+
+            # Fetch live gameweek data to get actual player stats
             live_data_url = f"{BASE_URL}event/{gameweek}/live/"
             live_data_response = requests.get(live_data_url)
             live_data_response.raise_for_status()
             live_data = live_data_response.json()
-            
+
+            # Create a map of team ID to total goals scored & conceded
+            team_goals_scored = {}
+            team_goals_conceded = {}
+
+            for fixture in fixtures:
+                home_team_id = fixture['team_h']
+                away_team_id = fixture['team_a']
+                home_goals_scored = fixture['team_h_score']
+                away_goals_scored = fixture['team_a_score']
+                home_goals_conceded = fixture['team_a_score']
+                away_goals_conceded = fixture['team_h_score']
+
+                if home_team_id not in team_goals_scored:
+                    team_goals_scored[home_team_id] = 0
+                if away_team_id not in team_goals_scored:
+                    team_goals_scored[away_team_id] = 0
+                if home_team_id not in team_goals_conceded:
+                    team_goals_conceded[home_team_id] = 0
+                if away_team_id not in team_goals_conceded:
+                    team_goals_conceded[away_team_id] = 0
+
+                team_goals_scored[home_team_id] += home_goals_scored
+                team_goals_scored[away_team_id] += away_goals_scored
+                team_goals_conceded[home_team_id] += home_goals_conceded
+                team_goals_conceded[away_team_id] += away_goals_conceded
+
+            # Calculate total goals scored & conceded for the team
             goals_scored = 0
             goals_conceded = 0
             players_scored = []
@@ -1917,26 +1965,25 @@ def analyze_teams():
             for pick in picks:
                 if pick['multiplier'] > 0:  # Exclude bench players
                     player_id = pick['element']
-                    player_stats = live_data['elements'][player_id - 1]['stats']
-                    player_goals = player_stats['goals_scored']
-                    player_conceded = player_stats['goals_conceded']
-                    
-                    # Get player name from static data
                     player_name = player_info_map[player_id]['web_name']
+                    player_team_id = player_info_map[player_id]['team']  # Get real-world club ID
 
-                    # Track goals scored and conceded
-                    goals_scored += player_goals
-                    goals_conceded += player_conceded
-                    if player_goals > 0:
-                        players_scored.append({
-                            'name': player_name,
-                            'goals': player_goals
-                        })
-                    if player_conceded > 0:
-                        players_conceded.append({
-                            'name': player_name,
-                            'conceded': player_conceded
-                        })
+                    # Get player's individual goals scored from live data
+                    live_player_data = live_data['elements'][player_id - 1]['stats']
+                    individual_goals = live_player_data['goals_scored']
+
+                    # Track only actual goals scored by the player
+                    goals_scored += individual_goals
+                    if individual_goals > 0:
+                        players_scored.append({'name': player_name, 'goals': individual_goals})
+
+                    # Get goals conceded by the player's real-world team
+                    team_conceded = team_goals_conceded.get(player_team_id, 0)
+
+                    # Track goals conceded
+                    goals_conceded += team_conceded
+                    if team_conceded > 0:
+                        players_conceded.append({'name': player_name, 'conceded': team_conceded})
 
             return {
                 'manager_name': manager_name,
@@ -1946,59 +1993,14 @@ def analyze_teams():
                 'players_scored': players_scored,
                 'players_conceded': players_conceded
             }
-        
+
         team1_stats = get_team_stats(team_id1)
         team2_stats = get_team_stats(team_id2)
-        
+
         return jsonify({'team1': team1_stats, 'team2': team2_stats})
-    
+
     except Exception as e:
         logging.error(f"Error analyzing teams: {e}")
         return jsonify({"error": "Failed to analyze teams"}), 500
-
-
-# Route for League-History-Page
-@app.route('/league-history')
-def ultimate_history():
-    return render_template('league-history.html')
-
-# API endpoint to fetch Gameweek scorers
-def fetch_standings(league_id, page):
-    url = f"https://fantasy.premierleague.com/api/leagues-classic/{league_id}/standings/?page_standings={page}"
-    response = requests.get(url)
-    return response.json()
-
-def fetch_manager_history(manager_id):
-    url = f"https://fantasy.premierleague.com/api/entry/{manager_id}/history/"
-    response = requests.get(url)
-    return response.json()
-
-@app.route('/api/gameweek-scorers/<int:league_id>/<int:gameweek>')
-def gameweek_scorers(league_id, gameweek):
-    standings = []
-    for page in range(1, 5):  # Assuming 4 pages of standings
-        data = fetch_standings(league_id, page)
-        standings.extend(data['standings']['results'])
-
-    scores = []
-    for manager in standings:
-        manager_id = manager['entry']
-        history = fetch_manager_history(manager_id)
-        gw_scores = history['current']
-
-        for gw in gw_scores:
-            if gw['event'] == gameweek:
-                scores.append({
-                    'manager': manager['player_name'],
-                    'team': manager['entry_name'],
-                    'score': gw['points'],
-                    'negative_points': gw.get('event_transfers_cost', 0),
-                    'adjusted_score': gw['points'] - gw.get('event_transfers_cost', 0)
-                })
-                break
-
-    scores.sort(key=lambda x: x['adjusted_score'], reverse=True)
-    return jsonify(scores)
-
 if __name__ == '__main__':
     app.run(debug=True, port=5001)
