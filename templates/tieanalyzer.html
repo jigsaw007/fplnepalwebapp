@@ -5,15 +5,18 @@
 {% block content %}
 <div class="container my-4">
     <h2 class="mb-4">Tie Analyzer</h2>
-        <!-- Tie-Break Rules Section -->
-        <div class="alert alert-info p-3" role="alert">
-            <h5>If there is a tie, the following tie-breaks will be applied until a winner is found:</h5>
-            <ul class="mb-0">
-                <li><strong>Most goals scored in the Gameweek</strong></li>
-                <li><strong>Fewest goals conceded in the Gameweek</strong></li>
-                <li><strong>Random Draw</strong> (Will be drawn live)</li>
-            </ul>
-        </div>
+    
+    <!-- Tie-Break Rules Section -->
+    <div class="alert alert-info p-3" role="alert">
+        <h5>If there is a tie, the following tie-breaks will be applied until a winner is found:</h5>
+        <ul class="mb-0">
+            <li><strong>Most goals scored in the Gameweek</strong></li>
+            <li><strong>Fewest goals conceded in the Gameweek</strong></li>
+            <li><strong>Random Draw</strong> (Will be drawn live)</li>
+        </ul>
+    </div>
+
+    <!-- Input Form -->
     <form id="tieAnalyzerForm">
         <div class="form-row">
             <div class="form-group col-md-4">
@@ -36,143 +39,136 @@
         <button type="submit" class="btn btn-primary mt-3">Analyze</button>
     </form>
 
+    <!-- Results Section -->
     <div id="analysisResult" class="mt-4"></div>
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('tieAnalyzerForm').addEventListener('submit', function(event) {
-            event.preventDefault();
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('tieAnalyzerForm').addEventListener('submit', function(event) {
+        event.preventDefault();
 
-            const teamId1 = document.getElementById('teamId1').value;
-            const teamId2 = document.getElementById('teamId2').value;
-            const gameweek = document.getElementById('gameweek').value;
+        const teamId1 = document.getElementById('teamId1').value;
+        const teamId2 = document.getElementById('teamId2').value;
+        const gameweek = document.getElementById('gameweek').value;
 
-            fetch(`/api/tieanalyze?team_id1=${teamId1}&team_id2=${teamId2}&gameweek=${gameweek}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.error) {
-                        document.getElementById('analysisResult').innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+        fetch(`/api/tieanalyze?team_id1=${teamId1}&team_id2=${teamId2}&gameweek=${gameweek}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('analysisResult').innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                } else {
+                    // Determine the winner based on tie-breaker rules
+                    let winnerMessage = "";
+                    if (data.team1.goals_scored > data.team2.goals_scored) {
+                        winnerMessage = `<h4 class="text-success">🏆 Winner: ${data.team1.manager_name} (Most Goals Scored)</h4>`;
+                    } else if (data.team2.goals_scored > data.team1.goals_scored) {
+                        winnerMessage = `<h4 class="text-success">🏆 Winner: ${data.team2.manager_name} (Most Goals Scored)</h4>`;
+                    } else if (data.team1.goals_conceded < data.team2.goals_conceded) {
+                        winnerMessage = `<h4 class="text-success">🏆 Winner: ${data.team1.manager_name} (Fewest Goals Conceded)</h4>`;
+                    } else if (data.team2.goals_conceded < data.team1.goals_conceded) {
+                        winnerMessage = `<h4 class="text-success">🏆 Winner: ${data.team2.manager_name} (Fewest Goals Conceded)</h4>`;
                     } else {
-                        const resultHtml = `
-                            <h4 class="mb-3">Results for Gameweek ${gameweek}</h4>
-                            <table class="table table-bordered table-striped">
-                                <thead class="thead-dark">
-                                    <tr>
-                                        <th>Team</th>
-                                        <th>Manager</th>
-                                        <th>Goals Scored</th>
-                                        <th>Goals Conceded</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr>
-                                        <td>${data.team1.team_name}</td>
-                                        <td>${data.team1.manager_name}</td>
-                                        <td>${data.team1.goals_scored}</td>
-                                        <td>${data.team1.goals_conceded}</td>
-                                    </tr>
-                                    <tr>
-                                        <td>${data.team2.team_name}</td>
-                                        <td>${data.team2.manager_name}</td>
-                                        <td>${data.team2.goals_scored}</td>
-                                        <td>${data.team2.goals_conceded}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-
-                            <h5>Goals Scored by Players</h5>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>${data.team1.team_name}</h6>
-                                    <ul class="list-group">
-                                        ${data.team1.players_scored.map(player => `
-                                            <li class="list-group-item">
-                                                ${player.name} - ${player.goals} goal(s)
-                                            </li>
-                                        `).join('')}
-                                    </ul>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6>${data.team2.team_name}</h6>
-                                    <ul class="list-group">
-                                        ${data.team2.players_scored.map(player => `
-                                            <li class="list-group-item">
-                                                ${player.name} - ${player.goals} goal(s)
-                                            </li>
-                                        `).join('')}
-                                    </ul>
-                                </div>
-                            </div>
-
-                            <h5 class="mt-4">Goals Conceded by Players</h5>
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h6>${data.team1.team_name}</h6>
-                                    <ul class="list-group">
-                                        ${data.team1.players_conceded.map(player => `
-                                            <li class="list-group-item">
-                                                ${player.name} - ${player.conceded} goal(s)
-                                            </li>
-                                        `).join('')}
-                                    </ul>
-                                </div>
-                                <div class="col-md-6">
-                                    <h6>${data.team2.team_name}</h6>
-                                    <ul class="list-group">
-                                        ${data.team2.players_conceded.map(player => `
-                                            <li class="list-group-item">
-                                                ${player.name} - ${player.conceded} goal(s)
-                                            </li>
-                                        `).join('')}
-                                    </ul>
-                                </div>
-                            </div>
-                        `;
-                        document.getElementById('analysisResult').innerHTML = resultHtml;
+                        winnerMessage = `<div class="alert alert-warning">
+                            <strong>Since both total goals scored and total goals conceded are tied, Admin will soon draw a random winner.</strong>
+                        </div>`;
                     }
-                })
-                .catch(() => {
-                    document.getElementById('analysisResult').innerHTML = '<div class="alert alert-danger">Failed to retrieve data. Please try again.</div>';
-                });
-        });
-    });
-</script>
 
-<style>
-    .container {
-        max-width: 800px;
-    }
-    .form-section {
-        padding: 20px;
-        background: #f7f7f7;
-        border-radius: 8px;
-        box-shadow: 0px 4px 8px rgba(0,0,0,0.1);
-    }
-    .team-summary {
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 20px;
-        margin-top: 20px;
-        background: #f9f9f9;
-    }
-    .team-header {
-        text-align: center;
-        margin-bottom: 15px;
-    }
-    .team-header h5 {
-        font-size: 1.5em;
-        color: #007bff;
-    }
-    .team-header p {
-        font-weight: bold;
-        color: #333;
-    }
-    .table th, .table td {
-        text-align: center;
-    }
-    .table th {
-        background: #e9ecef;
-    }
-</style>
+                    const resultHtml = `
+                        <h4 class="mb-3">Results for Gameweek ${gameweek}</h4>
+                        ${winnerMessage}
+                        <table class="table table-bordered table-striped">
+                            <thead class="thead-dark">
+                                <tr>
+                                    <th>Team</th>
+                                    <th>Manager</th>
+                                    <th>Goals Scored</th>
+                                    <th>Goals Conceded</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>${data.team1.team_name}</td>
+                                    <td>
+                                        <a href="https://fantasy.premierleague.com/entry/${teamId1}/event/${gameweek}" 
+                                           target="_blank" class="fw-bold text-decoration-none">
+                                           ${data.team1.manager_name} 🔗
+                                        </a>
+                                    </td>
+                                    <td>${data.team1.goals_scored}</td>
+                                    <td>${data.team1.goals_conceded}</td>
+                                </tr>
+                                <tr>
+                                    <td>${data.team2.team_name}</td>
+                                    <td>
+                                        <a href="https://fantasy.premierleague.com/entry/${teamId2}/event/${gameweek}" 
+                                           target="_blank" class="fw-bold text-decoration-none">
+                                           ${data.team2.manager_name} 🔗
+                                        </a>
+                                    </td>
+                                    <td>${data.team2.goals_scored}</td>
+                                    <td>${data.team2.goals_conceded}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <!-- Goals Scored by Players -->
+                        <h5>Goals Scored by Players</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>${data.team1.team_name}</h6>
+                                <ul class="list-group">
+                                    ${data.team1.players_scored.map(player => `
+                                        <li class="list-group-item">
+                                            ${player.name} - ${player.goals} goal(s)
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>${data.team2.team_name}</h6>
+                                <ul class="list-group">
+                                    ${data.team2.players_scored.map(player => `
+                                        <li class="list-group-item">
+                                            ${player.name} - ${player.goals} goal(s)
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Goals Conceded by Players -->
+                        <h5 class="mt-4">Goals Conceded by Players</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>${data.team1.team_name}</h6>
+                                <ul class="list-group">
+                                    ${data.team1.players_conceded.map(player => `
+                                        <li class="list-group-item">
+                                            ${player.name} - ${player.conceded} goal(s)
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>${data.team2.team_name}</h6>
+                                <ul class="list-group">
+                                    ${data.team2.players_conceded.map(player => `
+                                        <li class="list-group-item">
+                                            ${player.name} - ${player.conceded} goal(s)
+                                        </li>
+                                    `).join('')}
+                                </ul>
+                            </div>
+                        </div>
+                    `;
+                    document.getElementById('analysisResult').innerHTML = resultHtml;
+                }
+            })
+            .catch(() => {
+                document.getElementById('analysisResult').innerHTML = '<div class="alert alert-danger">Failed to retrieve data. Please try again.</div>';
+            });
+    });
+});
+</script>
 {% endblock %}
