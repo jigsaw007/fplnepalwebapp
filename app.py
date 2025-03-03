@@ -1907,6 +1907,9 @@ def gameweek_scorers(league_id, gameweek):
                 })
                 break
 
+
+        return jsonify({'team1': team1_stats, 'team2': team2_stats})
+
     scores.sort(key=lambda x: x['adjusted_score'], reverse=True)
     return jsonify(scores)
 
