@@ -1998,6 +1998,7 @@ def analyze_teams():
         team2_stats = get_team_stats(team_id2)
 
         return jsonify({'team1': team1_stats, 'team2': team2_stats})
+#end of tie analyzer
 
     except Exception as e:
         logging.error(f"Error analyzing teams: {e}")
