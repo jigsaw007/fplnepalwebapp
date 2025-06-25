@@ -1,62 +1,40 @@
-// src/pages/CaptainScore.js
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import { fetchAllClassicLeagueEntries, fetchCaptainScore } from "../api/fplApi";
 
 const CaptainScore = () => {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const leagueId = "420585";
+  const gameweek = 1; // or dynamically set this if needed
 
   useEffect(() => {
-    const fetchAllPages = async () => {
-      let page = 1;
-      let allResults = [];
-      let hasMore = true;
-
+    const loadData = async () => {
       try {
-        while (hasMore) {
-          const res = await axios.get(
-            `https://fantasy.premierleague.com/api/leagues-classic/${leagueId}/standings/?page_new_entries=1&page_standings=${page}&phase=1`
-          );
-          const results = res.data.standings.results;
-          allResults = allResults.concat(results);
-          hasMore = res.data.standings.has_next;
-          page += 1;
-        }
-
-        // Fetch captain data for each entry
-        const withCaptainScores = await Promise.all(
-          allResults.map(async (entry) => {
-            const historyRes = await axios.get(
-              `https://fantasy.premierleague.com/api/entry/${entry.entry}/event/${res.data.standings.event}/picks/`
-            );
-            const picks = historyRes.data.picks;
-            const captainId = picks.find(p => p.is_captain)?.element;
-            const captainScore = historyRes.data.entry_history.points;
-
+        const allEntries = await fetchAllClassicLeagueEntries(leagueId);
+        const data = await Promise.all(
+          allEntries.map(async (entry) => {
+            const captain = await fetchCaptainScore(entry.entry, gameweek);
             return {
               manager_name: entry.player_name,
               team_name: entry.entry_name,
-              captain_id: captainId,
-              captain_score: captainScore
+              captain_score: captain.captain_score,
             };
           })
         );
-
-        setEntries(withCaptainScores);
-      } catch (err) {
-        console.error("Error loading captain scores:", err);
+        setEntries(data);
+      } catch (error) {
+        console.error("Failed to load captain scores", error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAllPages();
+    loadData();
   }, []);
 
   return (
     <div className="p-4">
-      <h2 className="text-2xl font-bold mb-4 text-center text-purple-900">
+      <h2 className="text-2xl font-bold text-center text-purple-800 mb-4">
         Captain Scores – FPL Nepal Classic League
       </h2>
 
