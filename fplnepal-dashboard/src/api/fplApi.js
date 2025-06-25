@@ -243,3 +243,39 @@ export const fetchVersusHistory = async (teamId1, teamId2, gameweek) => {
     return null;
   }
 };
+
+import axios from "axios";
+
+// Fetch all pages of a classic league
+export const fetchAllClassicLeagueEntries = async (leagueId) => {
+  let page = 1;
+  let hasMore = true;
+  let allResults = [];
+
+  while (hasMore) {
+    const res = await axios.get(
+      `https://fantasy.premierleague.com/api/leagues-classic/${leagueId}/standings/?page_standings=${page}&phase=1`
+    );
+    allResults = allResults.concat(res.data.standings.results);
+    hasMore = res.data.standings.has_next;
+    page += 1;
+  }
+
+  return allResults;
+};
+
+// Fetch captain ID and score for a given entry and gameweek
+export const fetchCaptainScore = async (entryId, gameweek) => {
+  const res = await axios.get(
+    `https://fantasy.premierleague.com/api/entry/${entryId}/event/${gameweek}/picks/`
+  );
+
+  const captainPick = res.data.picks.find((pick) => pick.is_captain);
+  const captainId = captainPick?.element || null;
+  const score = res.data.entry_history.points;
+
+  return {
+    captain_id: captainId,
+    captain_score: score,
+  };
+};
