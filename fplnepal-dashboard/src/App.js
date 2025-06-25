@@ -19,6 +19,7 @@ import PriceChangePrediction from "./components/PriceChangePrediction";
 import AdComponent from "./components/AdComponent"; 
 import SquadCompare from "./components/SquadCompare";
 import Versus from "./components/Versus";
+import CheckRegistration from "./pages/CheckRegistration"; 
 
 const App = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -65,6 +66,7 @@ const App = () => {
                 <Route path="/price-change-prediction" element={<PriceChangePrediction />} />
                 <Route path="/squad-compare" element={<SquadCompare />} />
                 <Route path="/versus" element={<Versus />} />
+                <Route path="/check-registration" element={<CheckRegistration />} /> 
               </Routes>
               {/* Ad Component Placed Below Routes */}
               <div className="mt-6">
