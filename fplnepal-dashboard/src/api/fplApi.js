@@ -244,38 +244,46 @@ export const fetchVersusHistory = async (teamId1, teamId2, gameweek) => {
   }
 };
 
-import axios from "axios";
-
-// Fetch all pages of a classic league
-export const fetchAllClassicLeagueEntries = async (leagueId) => {
+// Get all members of a classic league
+export const fetchClassicLeagueCaptains = async (leagueId, gw = 1) => {
+  let allEntries = [];
   let page = 1;
-  let hasMore = true;
-  let allResults = [];
+  let hasNext = true;
 
-  while (hasMore) {
+  while (hasNext) {
     const res = await axios.get(
       `https://fantasy.premierleague.com/api/leagues-classic/${leagueId}/standings/?page_standings=${page}&phase=1`
     );
-    allResults = allResults.concat(res.data.standings.results);
-    hasMore = res.data.standings.has_next;
-    page += 1;
+    allEntries.push(...res.data.standings.results);
+    hasNext = res.data.standings.has_next;
+    page++;
   }
 
-  return allResults;
-};
+  // For each entry, get their captain score
+  const enriched = await Promise.all(
+    allEntries.map(async (entry) => {
+      try {
+        const res = await axios.get(
+          `https://fantasy.premierleague.com/api/entry/${entry.entry}/event/${gw}/picks/`
+        );
 
-// Fetch captain ID and score for a given entry and gameweek
-export const fetchCaptainScore = async (entryId, gameweek) => {
-  const res = await axios.get(
-    `https://fantasy.premierleague.com/api/entry/${entryId}/event/${gameweek}/picks/`
+        const captainId = res.data.picks.find(p => p.is_captain)?.element;
+        const captainScore = res.data.entry_history.points;
+
+        return {
+          manager_name: entry.player_name,
+          team_name: entry.entry_name,
+          captain_score: captainScore,
+        };
+      } catch (err) {
+        return {
+          manager_name: entry.player_name,
+          team_name: entry.entry_name,
+          captain_score: "N/A",
+        };
+      }
+    })
   );
 
-  const captainPick = res.data.picks.find((pick) => pick.is_captain);
-  const captainId = captainPick?.element || null;
-  const score = res.data.entry_history.points;
-
-  return {
-    captain_id: captainId,
-    captain_score: score,
-  };
+  return enriched;
 };
