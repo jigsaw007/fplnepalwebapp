@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
 
-const GA_TRACKING_ID = "G-9HXXFE93ZC"; // Replace with your actual Google Analytics ID
+const GA_TRACKING_ID = "G-9HXXFE93ZC"; // Replace with your actual Google Analytics ID//
 
 const usePageTracking = () => {
   const location = useLocation();  // ✅ Ensures it is used inside <Router>
