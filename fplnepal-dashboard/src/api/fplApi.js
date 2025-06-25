@@ -1,3 +1,5 @@
+import axios from "axios";
+
 // Determine the BASE_URL based on the environment
 const isLocal = process.env.NODE_ENV === "development";
 const BASE_URL = isLocal
