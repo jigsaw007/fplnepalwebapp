@@ -20,6 +20,9 @@ import AdComponent from "./components/AdComponent";
 import SquadCompare from "./components/SquadCompare";
 import Versus from "./components/Versus";
 import CheckRegistration from "./pages/CheckRegistration"; 
+import WorldCupLanding from './pages/WorldCup';
+import WorldCupTeamPage from './pages/WorldCup/TeamPage';
+import WorldCupAdmin from './pages/WorldCup/AdminDashboard';
 
 
 const App = () => {
@@ -68,6 +71,9 @@ const App = () => {
                 <Route path="/squad-compare" element={<SquadCompare />} />
                 <Route path="/versus" element={<Versus />} />
                 <Route path="/check-registration" element={<CheckRegistration />} /> 
+                <Route path="/worldcup" element={<WorldCupLanding />} />
+                <Route path="/worldcup/team/:id" element={<WorldCupTeamPage />} />
+                <Route path="/worldcup/admin" element={<WorldCupAdmin />} />
 
               </Routes>
               {/* Ad Component Placed Below Routes */}

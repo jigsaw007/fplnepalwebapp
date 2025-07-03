@@ -246,3 +246,19 @@ export const fetchVersusHistory = async (teamId1, teamId2, gameweek) => {
   }
 };
 
+
+export const fetchManagerInfo = async (entryId) => {
+  try {
+    const res = await fetch(`/api/entry/${entryId}/`);
+    const data = await res.json();
+    return {
+      name: `${data.player_first_name} ${data.player_last_name}`,
+      teamName: data.name,
+    };
+  } catch (error) {
+    console.error("Error in fetchManagerInfo:", error);
+    return null;
+  }
+};
+
+

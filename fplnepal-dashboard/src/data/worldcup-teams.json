@@ -1,0 +1,24 @@
+[
+  {
+    "id": 1,
+    "nation": "Argentina",
+    "flag": "🇦🇷",
+    "group": "C",
+    "manager_ids": [45658, 12578, 33654, 78954]
+  },
+  {
+    "id": 2,
+    "nation": "Brazil",
+    "flag": "🇧🇷",
+    "group": "G",
+    "manager_ids": [47856, 41556, 45799, 45632]
+  },
+  {
+    "id": 3,
+    "nation": "France",
+    "flag": "🇫🇷",
+    "group": "D",
+    "manager_ids": [44786, 45335, 48897, 21475]
+  }
+
+]

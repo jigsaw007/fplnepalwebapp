@@ -20,7 +20,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
         <Link to="/versus" className="block hover:bg-gray-700 p-2 rounded">⚽ Versus</Link>
 
         <h3 className="text-lg font-semibold mt-4">FPL NEPAL</h3>
-
+        <Link to="/worldcup" className="px-4 py-2 hover:text-purple-600">
+  🌍 World Cup
+</Link>
         <Link to="/classic-league" className="block hover:bg-gray-700 p-2 rounded">📊 Classic League</Link>
         <Link to="/headtohead-league" className="block hover:bg-gray-700 p-2 rounded">📊 H2H League</Link>
         <Link to="/tieanalyzer" className="block hover:bg-gray-700 p-2 rounded">🔍 Tie Analyzer</Link>
