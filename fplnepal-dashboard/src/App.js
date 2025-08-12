@@ -26,6 +26,8 @@ import WorldCupAdmin from './pages/WorldCup/AdminDashboard';
 import AllManagersPage from './pages/WorldCup/AllManagers';
 import WorldCupTeamLanding from './pages/WorldCup/TeamLanding';
 import ListofManagers from './pages/WorldCup/ListofManagers';
+import FixturePage from './pages/WorldCup/Fixtures';
+
 
 
 
@@ -82,6 +84,7 @@ const App = () => {
                 <Route path="/worldcup/all-managers" element={<AllManagersPage />} />
                 <Route path="/worldcup/team" element={<WorldCupTeamLanding />} />
                 <Route path="/worldcup/list" element={<ListofManagers />} />
+                 <Route path="/worldcup/fixtures" element={<FixturePage />} />
 
                 {/* Ad Refresh Component */}
                 
