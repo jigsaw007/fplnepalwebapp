@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import { BrowserRouter as Router, Route, Routes, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import usePageTracking from "./pages/usePageTracking";
 import Sidebar from "./components/Sidebar";
@@ -30,37 +30,37 @@ import FixturePage from './pages/WorldCup/Fixtures';
 import Results from './pages/WorldCup/Results';
 import GroupsPage from './pages/WorldCup/Groups';
 
-
-
-
-
-const App = () => {
+const AppInner = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen);
-  };
-
-  // Ad Refresh on Route Change
+  // Refresh ads on route change
   const AdRefresh = () => {
     useEffect(() => {
       if (window.adsbygoogle) {
         window.adsbygoogle.push({});
       }
-    }, [window.location.pathname]); // Refresh ads on route change
-
+    }, [window.location.pathname]);
     return null;
   };
 
+  // Hide sidebar on any /worldcup route
+  const { pathname } = useLocation();
+  const hideSidebar = pathname.startsWith("/worldcup");
+
   return (
-    <Router>
+    <>
       <PageTrackingWrapper />
       <div className="flex flex-col min-h-screen">
         <div className="flex flex-1 flex-col md:flex-row">
-          <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
-          
+          {/* Sidebar is hidden for /worldcup routes */}
+          {!hideSidebar && (
+            <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
+          )}
+
           <div className="flex-1 flex flex-col">
-            <Navbar toggleSidebar={toggleSidebar} />
+            {/* Hide hamburger menu when sidebar is hidden */}
+            <Navbar toggleSidebar={toggleSidebar} showMenu={!hideSidebar} />
 
             {/* Main Content Wrapper */}
             <div className="flex-1 p-6">
@@ -80,20 +80,22 @@ const App = () => {
                 <Route path="/squad-compare" element={<SquadCompare />} />
                 <Route path="/versus" element={<Versus />} />
                 <Route path="/check-registration" element={<CheckRegistration />} /> 
+
+                {/* World Cup routes */}
                 <Route path="/worldcup" element={<WorldCupLanding />} />
                 <Route path="/worldcup/team/:id" element={<WorldCupTeamPage />} />
                 <Route path="/worldcup/admin" element={<WorldCupAdmin />} />
                 <Route path="/worldcup/all-managers" element={<AllManagersPage />} />
                 <Route path="/worldcup/team" element={<WorldCupTeamLanding />} />
                 <Route path="/worldcup/list" element={<ListofManagers />} />
-                 <Route path="/worldcup/fixtures" element={<FixturePage />} />
-                 <Route path="/worldcup/results" element={<Results />} />
-                 <Route path="/worldcup/groups" element={<GroupsPage />} />
+                <Route path="/worldcup/fixtures" element={<FixturePage />} />
+                <Route path="/worldcup/results" element={<Results />} />
+                <Route path="/worldcup/groups" element={<GroupsPage />} />
 
-                {/* Ad Refresh Component */}
-                
-
+                {/* Ad Refresh trigger */}
+                <Route path="*" element={<AdRefresh />} />
               </Routes>
+
               {/* Ad Component Placed Below Routes */}
               <div className="mt-6">
                 <AdComponent />
@@ -105,9 +107,16 @@ const App = () => {
         {/* Footer Always Stays at Bottom */}
         <Footer />
       </div>
-    </Router>
+    </>
   );
 };
+
+// App with Router wrapper so useLocation works
+const App = () => (
+  <Router>
+    <AppInner />
+  </Router>
+);
 
 // Wrapper Component to Ensure <Router> Exists Before usePageTracking()
 const PageTrackingWrapper = () => {
