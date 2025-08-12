@@ -17,7 +17,7 @@ const Navbar = ({ toggleSidebar, showMenu = true }) => {
         onClick={() => navigate("/")}
         className="text-lg font-bold text-center flex-grow cursor-pointer hover:text-purple-300 transition"
       >
-        FPL Nepal Webapp
+        Fantasy Premier League Nepal
       </h1>
     </header>
   );

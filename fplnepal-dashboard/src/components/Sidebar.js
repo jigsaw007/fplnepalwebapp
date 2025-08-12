@@ -1,35 +1,168 @@
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
 const Sidebar = ({ isOpen, toggleSidebar }) => {
-  return (
-    <aside
-      className={`fixed inset-y-0 left-0 w-64 bg-red-400 text-white p-6 transform ${
-        isOpen ? "translate-x-0" : "-translate-x-full"
-      } transition-transform md:relative md:translate-x-0 md:w-1/6 h-screen`}
-    >
-      <button onClick={toggleSidebar} className="md:hidden text-white text-lg absolute top-4 right-4">
-        ✖
-      </button>
-      <h2 className="text-xl font-bold mb-6">FPL Nepal Dashboard</h2>
-      <nav className="space-y-4">
-        <Link to="/" className="block hover:bg-gray-700 p-2 rounded">🏠 Dashboard</Link>
-        <Link to="/players" className="block hover:bg-gray-700 p-2 rounded">⚽ Players</Link>
-        <Link to="/compare" className="block hover:bg-gray-700 p-2 rounded">⚽ Compare</Link>
-        <Link to="/history" className="block hover:bg-gray-700 p-2 rounded">⚽ History</Link>
-        <Link to="/squad-compare" className="block hover:bg-gray-700 p-2 rounded">⚽ Squad Compare</Link>
-        <Link to="/versus" className="block hover:bg-gray-700 p-2 rounded">⚽ Versus</Link>
+  // Tailwind class for active links
+  const linkBase =
+    "flex items-center gap-2 px-3 py-2 rounded-lg transition";
+  const linkInactive =
+    "text-white/90 hover:bg-white/10 hover:text-white";
+  const linkActive =
+    "bg-white/15 text-white font-semibold ring-1 ring-white/20";
 
-        <h3 className="text-lg font-semibold mt-4">FPL NEPAL</h3>
-        <Link to="/worldcup" className="px-4 py-2 hover:text-purple-600">
-  🌍 World Cup
-</Link>
-        <Link to="/classic-league" className="block hover:bg-gray-700 p-2 rounded">📊 Classic League</Link>
-        {/* <Link to="/headtohead-league" className="block hover:bg-gray-700 p-2 rounded">📊 H2H League</Link> */}
-        <Link to="/tieanalyzer" className="block hover:bg-gray-700 p-2 rounded">🔍 Tie Analyzer</Link>
-        {/* <Link to="/h2htopscorer" className="block hover:bg-gray-700 p-2 rounded">🔍 H2HTopScorer</Link> */}
-        <Link to="/check-registration" className="block hover:bg-gray-700 p-2 rounded">🧾 Check Registration</Link>
-      </nav>
-    </aside>
+  return (
+    <>
+      {/* Mobile backdrop */}
+      <div
+        onClick={toggleSidebar}
+        className={`fixed inset-0 bg-black/40 backdrop-blur-sm md:hidden transition-opacity ${
+          isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+      />
+
+      <aside
+        aria-label="Primary sidebar"
+        className={`
+          fixed left-0 top-0 z-40
+          h-screen w-72 md:w-64
+          md:static md:translate-x-0
+          transform transition-transform duration-300
+          ${isOpen ? "translate-x-0" : "-translate-x-full"}
+          bg-gradient-to-b from-purple-900 to-indigo-900
+          text-white shadow-xl md:shadow-none
+          border-r border-white/10
+        `}
+      >
+        {/* Shell uses flex column so the nav can scroll independently */}
+        <div className="flex h-full flex-col">
+          {/* Header (sticky) */}
+          <div className="relative px-5 py-4 border-b border-white/10 sticky top-0 bg-gradient-to-b from-purple-900/90 to-indigo-900/90 backdrop-blur">
+            <button
+              onClick={toggleSidebar}
+              className="absolute right-4 top-4 md:hidden text-white/80 hover:text-white text-lg"
+              aria-label="Close sidebar"
+              title="Close"
+            >
+              ✖
+            </button>
+            <h2 className="text-xl font-extrabold tracking-tight">FPL Nepal</h2>
+            <p className="text-xs text-white/60 mt-0.5">Webapp</p>
+          </div>
+
+          {/* Scrollable nav */}
+          <nav className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
+            {/* Section: Main */}
+            <div>
+              <p className="px-2 mb-2 text-[11px] uppercase tracking-wider text-white/50">
+                Main
+              </p>
+              <div className="space-y-1">
+                <NavLink to="/" end
+                  className={({ isActive }) =>
+                    `${linkBase} ${isActive ? linkActive : linkInactive}`
+                  }
+                >
+                  <span>🏠</span> <span>Dashboard</span>
+                </NavLink>
+
+                <NavLink to="/players"
+                  className={({ isActive }) =>
+                    `${linkBase} ${isActive ? linkActive : linkInactive}`
+                  }
+                >
+                  <span>⚽</span> <span>Players</span>
+                </NavLink>
+
+                <NavLink to="/compare"
+                  className={({ isActive }) =>
+                    `${linkBase} ${isActive ? linkActive : linkInactive}`
+                  }
+                >
+                  <span>📊</span> <span>Compare</span>
+                </NavLink>
+
+                <NavLink to="/history"
+                  className={({ isActive }) =>
+                    `${linkBase} ${isActive ? linkActive : linkInactive}`
+                  }
+                >
+                  <span>🕓</span> <span>History</span>
+                </NavLink>
+
+                <NavLink to="/squad-compare"
+                  className={({ isActive }) =>
+                    `${linkBase} ${isActive ? linkActive : linkInactive}`
+                  }
+                >
+                  <span>🧩</span> <span>Squad Compare</span>
+                </NavLink>
+
+                <NavLink to="/versus"
+                  className={({ isActive }) =>
+                    `${linkBase} ${isActive ? linkActive : linkInactive}`
+                  }
+                >
+                  <span>⚔️</span> <span>Versus</span>
+                </NavLink>
+              </div>
+            </div>
+
+            {/* Section: FPL Nepal */}
+            <div>
+              <p className="px-2 mb-2 text-[11px] uppercase tracking-wider text-white/50">
+                FPL Nepal
+              </p>
+              <div className="space-y-1">
+                <NavLink to="/worldcup"
+                  className={({ isActive }) =>
+                    `${linkBase} ${isActive ? linkActive : linkInactive}`
+                  }
+                >
+                  <span>🌍</span> <span>World Cup</span>
+                </NavLink>
+
+                <NavLink to="/classic-league"
+                  className={({ isActive }) =>
+                    `${linkBase} ${isActive ? linkActive : linkInactive}`
+                  }
+                >
+                  <span>🏆</span> <span>Classic League</span>
+                </NavLink>
+
+                {/* <NavLink to="/headtohead-league" className={({ isActive }) => `${linkBase} ${isActive ? linkActive : linkInactive}`}> <span>🎯</span> <span>H2H League</span> </NavLink> */}
+
+                <NavLink to="/tieanalyzer"
+                  className={({ isActive }) =>
+                    `${linkBase} ${isActive ? linkActive : linkInactive}`
+                  }
+                >
+                  <span>🔍</span> <span>Tie Analyzer</span>
+                </NavLink>
+
+                {/* <NavLink to="/h2htopscorer" className={({ isActive }) => `${linkBase} ${isActive ? linkActive : linkInactive}`}> <span>⭐</span> <span>H2H Top Scorer</span> </NavLink> */}
+
+                <NavLink to="/check-registration"
+                  className={({ isActive }) =>
+                    `${linkBase} ${isActive ? linkActive : linkInactive}`
+                  }
+                >
+                  <span>🧾</span> <span>Check Registration</span>
+                  
+                </NavLink>
+                <a
+  href="https://www.fplnepal.com/"
+  target="_blank"
+  rel="noopener noreferrer"
+  className={`${linkBase} ${linkInactive}`}
+>
+  <span>🏡</span> <span>Homepage</span>
+</a>
+              </div>
+            </div>
+          </nav>
+
+        </div>
+      </aside>
+    </>
   );
 };
 
