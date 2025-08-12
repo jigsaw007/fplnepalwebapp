@@ -1,67 +1,80 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { supabase } from '../../supabaseClient';
-import Flag from 'react-world-flags';
+import { useNavigate } from 'react-router-dom';
+import Papa from 'papaparse';
+import GroupStage from '../../components/worldcup/GroupStage';
+import Fixtures from '../../components/worldcup/Fixtures';
+import Standings from '../../components/worldcup/Standings';
+import Results from '../../components/worldcup/Results';
+import TabsNav from '../../components/worldcup/TabsNav';
 
-export default function WorldCupLanding() {
+const tabs = ['Teams', 'Groups', 'Fixtures', 'Standings', 'Results'];
+
+export default function WorldCupIndex() {
   const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('Groups');
+  const navigate = useNavigate();
+
+  const sheetUrl =
+    'https://docs.google.com/spreadsheets/d/14BtHDo7vWtEZ2sPhgRE1ZyaCfJ8LcKMBKr0ejTUNtyQ/export?format=csv&gid=877590509';
 
   useEffect(() => {
     const fetchTeams = async () => {
-      const { data, error } = await supabase.from('worldcup_teams').select('*');
-      if (!error) {
-        const sorted = data.sort((a, b) => a.nation.localeCompare(b.nation));
-        setTeams(sorted);
-      }
-      setLoading(false);
+      const res = await fetch(sheetUrl);
+      const text = await res.text();
+      Papa.parse(text, {
+        header: true,
+        skipEmptyLines: true,
+        complete: (results) => {
+          setTeams(results.data);
+          setLoading(false);
+        },
+      });
     };
 
     fetchTeams();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-blue-50 via-purple-100 to-white">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-purple-600 border-solid"></div>
-      </div>
-    );
-  }
+  const handleTabClick = (tab) => {
+    if (tab === 'Teams') {
+      navigate('/worldcup/team'); // go to team page
+    } else {
+      setActiveTab(tab); // other tabs stay in this page
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-100 via-white to-blue-50 flex flex-col items-center py-10 px-4">
-      {/* Animated Globe Title */}
-      <h1 className="text-3xl sm:text-4xl font-bold mb-8 flex items-center gap-3 animate-pulse">
+      <h1 className="text-3xl sm:text-4xl font-bold mb-6 flex items-center gap-3 animate-pulse">
         <span role="img" aria-label="globe" className="text-4xl">🌍</span>
         <span>FPL Nepal World Cup 2025</span>
       </h1>
 
-      {/* Team Grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-5 mb-12">
-        {teams.map((team) => (
-          <Link
-            to={`/worldcup/team/${team.id}`}
-            key={team.id}
-            className="flex items-center gap-2 text-sm font-medium hover:text-purple-700 transition"
-          >
-            <Flag
-              code={team.flag?.toLowerCase()}
-              style={{
-                width: 24,
-                height: 16,
-                borderRadius: 2,
-                boxShadow: '0 0 4px rgba(0,0,0,0.1)',
-              }}
-            />
-            <span>{team.nation}</span>
-          </Link>
-        ))}
-      </div>
-
-      <p className="text-center text-sm text-gray-700 max-w-lg px-2">
-        ⚽ The World Cup is coming! Fixtures, groups, rules, and more will be announced soon.
-        Stay tuned and click a team to view its managers.
+      <p className="text-center text-sm text-gray-700 max-w-lg px-2 mb-8">
+        ⚽ Dive into the excitement of the FPL Nepal World Cup! Explore teams, view manager lineups, and follow every group battle on the road to glory.
       </p>
+
+      <div className="w-full max-w-5xl">
+        {/* Tabs via reusable component (adds “Full Team” automatically) */}
+        <TabsNav
+          tabs={tabs}
+          active={activeTab}
+          onSelect={handleTabClick}
+        />
+
+        {loading ? (
+          <div className="min-h-[200px] flex items-center justify-center">
+            <div className="animate-spin rounded-full h-10 w-10 border-t-4 border-purple-600 border-solid"></div>
+          </div>
+        ) : (
+          <>
+            {activeTab === 'Groups' && <GroupStage teams={teams} />}
+            {activeTab === 'Fixtures' && <Fixtures />}
+            {activeTab === 'Standings' && <Standings />}
+            {activeTab === 'Results' && <Results />}
+          </>
+        )}
+      </div>
     </div>
   );
 }

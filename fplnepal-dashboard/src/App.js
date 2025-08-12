@@ -23,6 +23,11 @@ import CheckRegistration from "./pages/CheckRegistration";
 import WorldCupLanding from './pages/WorldCup';
 import WorldCupTeamPage from './pages/WorldCup/TeamPage';
 import WorldCupAdmin from './pages/WorldCup/AdminDashboard';
+import AllManagersPage from './pages/WorldCup/AllManagers';
+import WorldCupTeamLanding from './pages/WorldCup/TeamLanding';
+import ListofManagers from './pages/WorldCup/ListofManagers';
+
+
 
 
 const App = () => {
@@ -74,6 +79,12 @@ const App = () => {
                 <Route path="/worldcup" element={<WorldCupLanding />} />
                 <Route path="/worldcup/team/:id" element={<WorldCupTeamPage />} />
                 <Route path="/worldcup/admin" element={<WorldCupAdmin />} />
+                <Route path="/worldcup/all-managers" element={<AllManagersPage />} />
+                <Route path="/worldcup/team" element={<WorldCupTeamLanding />} />
+                <Route path="/worldcup/list" element={<ListofManagers />} />
+
+                {/* Ad Refresh Component */}
+                
 
               </Routes>
               {/* Ad Component Placed Below Routes */}
