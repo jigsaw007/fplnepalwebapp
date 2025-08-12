@@ -8,9 +8,13 @@ export default function TabsNav({ tabs = [], active = '', onSelect }) {
 
   const handleSelect = (tab) => {
     if (tab === 'Full Team') {
-      navigate('/worldcup/list'); // direct link to ListofManagers page
+      navigate('/worldcup/list');                // ListofManagers page
     } else if (tab === 'Fixtures') {
-      navigate('/worldcup/fixtures'); // direct link to Fixtures page
+      navigate('/worldcup/fixtures');            // Fixtures page
+    } else if (tab === 'Results') {
+      navigate('/worldcup/results');             // Results page (optional)
+    } else if (tab === 'Groups') {
+      navigate('/worldcup/groups');              // NEW: Groups page with live tables
     } else {
       onSelect?.(tab);
     }

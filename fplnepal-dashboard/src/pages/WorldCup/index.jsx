@@ -3,11 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import Papa from 'papaparse';
 import GroupStage from '../../components/worldcup/GroupStage';
 import Fixtures from '../../components/worldcup/Fixtures';
-import Standings from '../../components/worldcup/Standings';
 import Results from '../../components/worldcup/Results';
 import TabsNav from '../../components/worldcup/TabsNav';
 
-const tabs = ['Teams', 'Groups', 'Fixtures', 'Standings', 'Results'];
+const tabs = ['Teams', 'Groups', 'Fixtures', 'Results'];
 
 export default function WorldCupIndex() {
   const [teams, setTeams] = useState([]);
@@ -70,7 +69,7 @@ export default function WorldCupIndex() {
           <>
             {activeTab === 'Groups' && <GroupStage teams={teams} />}
             {activeTab === 'Fixtures' && <Fixtures />}
-            {activeTab === 'Standings' && <Standings />}
+            
             {activeTab === 'Results' && <Results />}
           </>
         )}

@@ -157,7 +157,7 @@ export default function FixturePage() {
       <div className="max-w-6xl mx-auto px-4 pt-8 pb-12">
         {/* Tabs */}
         <TabsNav
-          tabs={['Teams', 'Groups', 'Fixtures', 'Standings', 'Results']}
+          tabs={['Teams', 'Groups', 'Fixtures', 'Results']}
           active={'Fixtures'}
           onSelect={(tab) => {
             if (tab === 'Fixtures') return;

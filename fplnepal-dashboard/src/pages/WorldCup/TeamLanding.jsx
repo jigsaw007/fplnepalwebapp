@@ -43,7 +43,7 @@ export default function TeamLanding() {
       {/* Tabs at top */}
       <div className="w-full max-w-5xl mx-auto mb-6">
         <TabsNav
-          tabs={['Teams', 'Groups', 'Fixtures', 'Standings', 'Results']}
+          tabs={['Teams', 'Groups', 'Fixtures','Results']}
           active="Teams"
           onSelect={(tab) => {
             if (tab === 'Teams') return; // stay here

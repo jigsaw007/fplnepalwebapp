@@ -104,7 +104,7 @@ return (
 
       {/* Tabs navigation */}
       <TabsNav
-        tabs={['Teams', 'Groups', 'Fixtures', 'Standings', 'Results']}
+        tabs={['Teams', 'Groups', 'Fixtures', 'Results']}
         active="Full Team"
       />
     </div>

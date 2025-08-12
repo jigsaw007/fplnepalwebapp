@@ -84,7 +84,7 @@ export default function TeamPage() {
 
   const flagUrl = iso2 ? `https://flagcdn.com/w320/${iso2.toLowerCase()}.png` : '';
   <TabsNav
-  tabs={['Teams', 'Groups', 'Fixtures', 'Standings', 'Results']}
+  tabs={['Teams', 'Groups', 'Fixtures','Results']}
   active="Teams"
   onSelect={(tab) => {
     if (tab === 'Teams') return; // Stay on this page
@@ -98,7 +98,7 @@ export default function TeamPage() {
       <div className="max-w-5xl mx-auto pt-8 px-4">
         {/* Tabs */}
         <TabsNav
-          tabs={['Teams', 'Groups', 'Fixtures', 'Standings', 'Results']}
+          tabs={['Teams', 'Groups', 'Fixtures', 'Results']}
           active={'Teams'}
           onSelect={(tab) => {
             if (tab === 'Teams') return; // stay on this page
