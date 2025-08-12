@@ -3,7 +3,7 @@ import { fetchClassicLeague, fetchManagerHistory } from "../api/fplApi";
 
 const ClassicLeague = () => {
   const [standings, setStandings] = useState([]);
-  const [selectedLeague, setSelectedLeague] = useState("420581"); // Default: FPL Nepal Ultimate
+  const [selectedLeague, setSelectedLeague] = useState("235907"); // Default: FPL Nepal Ultimate
   const [selectedGameweek, setSelectedGameweek] = useState(1); // Default: GW1
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -87,13 +87,13 @@ const ClassicLeague = () => {
       {/* League & Gameweek Selection */}
       <div className="flex flex-col md:flex-row space-y-2 md:space-x-4 md:space-y-0 mb-4">
         <div>
-          <label className="font-semibold">Select League: </label>
+          {/* <label className="font-semibold">Select League: </label> */}
           <select
             value={selectedLeague}
             onChange={(e) => setSelectedLeague(e.target.value)}
             className="border p-2 rounded bg-white w-full md:w-auto"
           >
-            <option value="420581">FPL Nepal Ultimate League</option>
+            {/* <option value="420581">FPL Nepal Ultimate League</option> */}
             <option value="420585">FPL Nepal Classic League</option>
           </select>
         </div>

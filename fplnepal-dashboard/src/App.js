@@ -7,12 +7,12 @@ import Dashboard from "./pages/Dashboard";
 import Players from "./pages/Players";
 import Compare from "./pages/Compare";
 import ClassicLeague from "./pages/ClassicLeague";
-import HeadToHeadLeague from "./pages/HeadToHeadLeague";
+// import HeadToHeadLeague from "./pages/HeadToHeadLeague";
 import DreamTeam from "./components/DreamTeam";
 import Suggestion from "./components/Suggestion";
 import Footer from "./components/Footer";
 import TieAnalyzer from "./components/TieAnalyzer";
-import H2HTopScorer from "./components/h2htopscorer";
+// import H2HTopScorer from "./components/h2htopscorer";
 import History from "./components/History";
 import Live from "./components/Live";
 import PriceChangePrediction from "./components/PriceChangePrediction";
@@ -69,11 +69,11 @@ const App = () => {
                 <Route path="/players" element={<Players />} />
                 <Route path="/compare" element={<Compare />} />
                 <Route path="/classic-league" element={<ClassicLeague />} />
-                <Route path="/headtohead-league" element={<HeadToHeadLeague />} />
+                {/* <Route path="/headtohead-league" element={<HeadToHeadLeague />} /> */}
                 <Route path="/dream-team" element={<DreamTeam />} />
                 <Route path="/suggestion" element={<Suggestion />} />
                 <Route path="/tieanalyzer" element={<TieAnalyzer />} />
-                <Route path="/h2htopscorer" element={<H2HTopScorer />} />
+                {/* <Route path="/h2htopscorer" element={<H2HTopScorer />} /> */}
                 <Route path="/history" element={<History />} />
                 <Route path="/live" element={<Live />} />
                 <Route path="/price-change-prediction" element={<PriceChangePrediction />} />

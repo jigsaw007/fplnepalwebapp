@@ -24,9 +24,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
   🌍 World Cup
 </Link>
         <Link to="/classic-league" className="block hover:bg-gray-700 p-2 rounded">📊 Classic League</Link>
-        <Link to="/headtohead-league" className="block hover:bg-gray-700 p-2 rounded">📊 H2H League</Link>
+        {/* <Link to="/headtohead-league" className="block hover:bg-gray-700 p-2 rounded">📊 H2H League</Link> */}
         <Link to="/tieanalyzer" className="block hover:bg-gray-700 p-2 rounded">🔍 Tie Analyzer</Link>
-        <Link to="/h2htopscorer" className="block hover:bg-gray-700 p-2 rounded">🔍 H2HTopScorer</Link>
+        {/* <Link to="/h2htopscorer" className="block hover:bg-gray-700 p-2 rounded">🔍 H2HTopScorer</Link> */}
         <Link to="/check-registration" className="block hover:bg-gray-700 p-2 rounded">🧾 Check Registration</Link>
       </nav>
     </aside>
