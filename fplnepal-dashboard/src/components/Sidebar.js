@@ -136,6 +136,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 >
                   <span>🏆</span> <span>Classic League</span>
                 </NavLink>
+                <NavLink
+  to="/gwwinner"
+  className={({ isActive }) =>
+    `${linkBase} ${isActive ? linkActive : linkInactive}`
+  }
+>
+  <span>🥇</span> <span>GW Winners</span>
+</NavLink>
 
                 {/* <NavLink to="/headtohead-league" className={({ isActive }) => `${linkBase} ${isActive ? linkActive : linkInactive}`}> <span>🎯</span> <span>H2H League</span> </NavLink> */}
 
