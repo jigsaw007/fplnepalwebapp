@@ -30,6 +30,7 @@ import FixturePage from './pages/WorldCup/Fixtures';
 import Results from './pages/WorldCup/Results';
 import GroupsPage from './pages/WorldCup/Groups';
 import CaptainMode from "./pages/CaptainMode";
+import GWwinner from "./pages/GWwinner";
 
 
 const AppInner = () => {
@@ -83,6 +84,8 @@ const AppInner = () => {
                 <Route path="/versus" element={<Versus />} />
                 <Route path="/check-registration" element={<CheckRegistration />} /> 
                 <Route path="/captainmode" element={<CaptainMode />} />
+                <Route path="/gwwinner" element={<GWwinner />} />
+
 
 
                 {/* World Cup routes */}
