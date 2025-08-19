@@ -825,3 +825,163 @@ module.exports.handler = serverless(app, {
 // app.listen(PORT, () => {
 //   console.log(`🚀 Server running on port ${PORT}`);
 // });
+
+// ===== Captain Mode: Captain-Only Standings (Per-GW & Overall) =====
+const REQ_OPTS = { headers: { "User-Agent": "Mozilla/5.0 (CaptainMode/1.0)" } };
+
+async function getAllClassicLeagueStandings(leagueId) {
+  let page = 1, hasNext = true, all = [];
+  while (hasNext) {
+    const { data } = await axios.get(
+      `${FPL_BASE_URL}/leagues-classic/${leagueId}/standings/?page_standings=${page}`,
+      REQ_OPTS
+    );
+    if (!data || !data.standings) break;
+    all.push(...(data.standings.results || []));
+    hasNext = data.standings.has_next;
+    page++;
+  }
+  return all;
+}
+
+app.get("/captain-standings/:leagueId/:gwOrOverall", async (req, res) => {
+  const { leagueId, gwOrOverall } = req.params;
+  const isOverall = String(gwOrOverall).toLowerCase() === "overall";
+  const gw = isOverall ? null : Number(gwOrOverall);
+
+  if (!leagueId || (!isOverall && (!Number.isInteger(gw) || gw <= 0))) {
+    return res.status(400).json({ error: "Invalid leagueId or gameweek/overall" });
+  }
+
+  try {
+    // 1) League table
+    const table = await getAllClassicLeagueStandings(leagueId);
+
+    // 2) Bootstrap once (events + player names)
+    const { data: boot } = await axios.get(`${FPL_BASE_URL}/bootstrap-static/`, REQ_OPTS);
+    const events = boot?.events || [];
+    const playerNameIndex = Object.fromEntries(
+      (boot?.elements || []).map((p) => [p.id, p.web_name])
+    );
+
+    if (isOverall) {
+      // --- Build the list of eligible GWs robustly ---
+      const now = new Date();
+      let eligibleGWs = events
+        .filter(e =>
+          e.finished === true ||
+          e.data_checked === true ||
+          new Date(e.deadline_time) <= now
+        )
+        .map(e => e.id);
+
+      // Fallback: if none matched, try the latest whose deadline passed
+      if (eligibleGWs.length === 0) {
+        const latestPassed = events
+          .filter(e => new Date(e.deadline_time) <= now)
+          .sort((a, b) => b.id - a.id)[0]?.id;
+        if (latestPassed) eligibleGWs = [latestPassed];
+      }
+
+      // Preload live total points for each eligible GW
+      const liveIndexByGW = {};
+      for (const g of eligibleGWs) {
+        const { data: live } = await axios.get(`${FPL_BASE_URL}/event/${g}/live/`, REQ_OPTS);
+        liveIndexByGW[g] = Object.fromEntries(
+          (live?.elements || []).map(e => [e.id, e.stats?.total_points ?? 0])
+        );
+      }
+
+      // Sum captain points across all eligible GWs
+      const rows = await Promise.all(
+        table.map(async (row) => {
+          let totalCaptainPoints = 0;
+
+          for (const g of eligibleGWs) {
+            try {
+              const { data: picks } = await axios.get(
+                `${FPL_BASE_URL}/entry/${row.entry}/event/${g}/picks/`,
+                REQ_OPTS
+              );
+              const cap = (picks?.picks || []).find(p => p.is_captain);
+              if (!cap) continue;
+
+              const base = liveIndexByGW[g]?.[cap.element] ?? 0;
+              const mult = picks?.active_chip === "3xc" ? 3 : 2; // 2× normal, 3× if Triple Captain
+              totalCaptainPoints += base * mult;
+            } catch { continue; }
+          }
+
+          return {
+            manager_id: row.entry,
+            manager_name: row.player_name,
+            team_name: row.entry_name,
+            captain_points: totalCaptainPoints,
+          };
+        })
+      );
+
+      const standings = rows
+        .sort((a, b) => b.captain_points - a.captain_points)
+        .map((r, i) => ({ rank: i + 1, ...r }));
+
+      return res.json({ mode: "overall", standings });
+    }
+
+    // --- Single GW mode ---
+    const { data: live } = await axios.get(`${FPL_BASE_URL}/event/${gw}/live/`, REQ_OPTS);
+    const liveIndex = Object.fromEntries(
+      (live?.elements || []).map((e) => [e.id, e.stats?.total_points ?? 0])
+    );
+
+    const rows = await Promise.all(
+      table.map(async (row) => {
+        try {
+          const { data: picks } = await axios.get(
+            `${FPL_BASE_URL}/entry/${row.entry}/event/${gw}/picks/`,
+            REQ_OPTS
+          );
+          const cap = (picks?.picks || []).find((p) => p.is_captain);
+          if (!cap) {
+            return {
+              manager_id: row.entry,
+              manager_name: row.player_name,
+              team_name: row.entry_name,
+              captain_name: "N/A",
+              multiplier: 0,
+              captain_points: 0,
+            };
+          }
+          const base = liveIndex[cap.element] ?? 0;
+          const mult = picks?.active_chip === "3xc" ? 3 : 2;
+          return {
+            manager_id: row.entry,
+            manager_name: row.player_name,
+            team_name: row.entry_name,
+            captain_name: playerNameIndex[cap.element] || `#${cap.element}`,
+            multiplier: mult,
+            captain_points: base * mult,
+          };
+        } catch {
+          return {
+            manager_id: row.entry,
+            manager_name: row.player_name,
+            team_name: row.entry_name,
+            captain_name: "N/A",
+            multiplier: 0,
+            captain_points: 0,
+          };
+        }
+      })
+    );
+
+    const standings = rows
+      .sort((a, b) => b.captain_points - a.captain_points)
+      .map((r, i) => ({ rank: i + 1, ...r }));
+
+    return res.json({ mode: "gw", gameweek: gw, standings });
+  } catch (err) {
+    console.error("Captain Mode error:", err?.message || err);
+    return res.status(500).json({ error: "Failed to fetch captain standings" });
+  }
+});

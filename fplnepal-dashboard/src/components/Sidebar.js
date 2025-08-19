@@ -112,6 +112,15 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 FPL Nepal
               </p>
               <div className="space-y-1">
+                <NavLink
+  to="/captainmode"
+  className={({ isActive }) =>
+    `${linkBase} ${isActive ? linkActive : linkInactive}`
+  }
+>
+  <span>👑</span> <span>Captain Mode</span>
+</NavLink>
+
                 <NavLink to="/worldcup"
                   className={({ isActive }) =>
                     `${linkBase} ${isActive ? linkActive : linkInactive}`

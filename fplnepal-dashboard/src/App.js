@@ -29,6 +29,8 @@ import ListofManagers from './pages/WorldCup/ListofManagers';
 import FixturePage from './pages/WorldCup/Fixtures';
 import Results from './pages/WorldCup/Results';
 import GroupsPage from './pages/WorldCup/Groups';
+import CaptainMode from "./pages/CaptainMode";
+
 
 const AppInner = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -80,6 +82,8 @@ const AppInner = () => {
                 <Route path="/squad-compare" element={<SquadCompare />} />
                 <Route path="/versus" element={<Versus />} />
                 <Route path="/check-registration" element={<CheckRegistration />} /> 
+                <Route path="/captainmode" element={<CaptainMode />} />
+
 
                 {/* World Cup routes */}
                 <Route path="/worldcup" element={<WorldCupLanding />} />

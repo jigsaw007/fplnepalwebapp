@@ -262,3 +262,11 @@ export const fetchManagerInfo = async (entryId) => {
 };
 
 
+export const fetchCaptainStandings = async (leagueId, mode) => {
+  // mode: number|string  -> e.g., 1, 2, "overall"
+  const res = await fetch(`${BASE_URL}/captain-standings/${leagueId}/${mode}`);
+  if (!res.ok) throw new Error("Failed to fetch captain standings");
+  return res.json(); // {mode:"gw"| "overall", gameweek?, standings:[...]}
+};
+
+
