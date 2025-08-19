@@ -269,4 +269,9 @@ export const fetchCaptainStandings = async (leagueId, mode) => {
   return res.json(); // {mode:"gw"| "overall", gameweek?, standings:[...]}
 };
 
+export const fetchGwTop = async (leagueId, gameweek) => {
+  const res = await fetch(`${BASE_URL}/gw-top/${leagueId}/${gameweek}`);
+  if (!res.ok) throw new Error("Failed to fetch GW top scorers");
+  return res.json(); // { gameweek, top3, others }
+};
 
