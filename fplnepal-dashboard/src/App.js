@@ -60,12 +60,12 @@ const AppInner = () => {
             <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
           )}
 
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col min-w-0">
             {/* Hide hamburger menu when sidebar is hidden */}
             <Navbar toggleSidebar={toggleSidebar} showMenu={!hideSidebar} />
 
             {/* Main Content Wrapper */}
-            <div className="flex-1 p-6">
+            <div className="flex-1 p-6 min-w-0 overflow-x-hidden">
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/players" element={<Players />} />
