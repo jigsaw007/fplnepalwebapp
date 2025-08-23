@@ -1,6 +1,7 @@
 // src/pages/GWwinner.jsx
 import { useEffect, useMemo, useState } from "react";
 import { fetchFPLData, fetchGwTop } from "../api/fplApi";
+import { fetchClassicLeague } from "../api/fplApi";
 
 const LEAGUE_ID = 235907;
 
@@ -32,13 +33,36 @@ export default function GWwinner() {
     load();
   }, []);
 
-  const handleFetch = async (targetGw) => {
-    setLoading(true);
-    const data = await fetchGwTop(LEAGUE_ID, targetGw);
-    setTop3(data?.top3 || []);
-    setOthers(data?.others || []);
-    setLoading(false);
-  };
+
+
+const handleFetch = async (targetGw) => {
+  setLoading(true);
+
+  // fetch both gwTop and full standings
+  const gwTop = await fetchGwTop(LEAGUE_ID, targetGw);
+  const standings = await fetchClassicLeague(LEAGUE_ID, targetGw);
+
+  // make a map: manager_id → real rank
+  const rankMap = {};
+  standings.forEach((s) => {
+    rankMap[s.id] = s.rank;
+  });
+
+  // merge real rank into gwTop data
+  const top3WithRank = gwTop.top3.map((r) => ({
+    ...r,
+    league_rank: rankMap[r.manager_id] || "-",
+  }));
+  const othersWithRank = gwTop.others.map((r) => ({
+    ...r,
+    league_rank: rankMap[r.manager_id] || "-",
+  }));
+
+  setTop3(top3WithRank);
+  setOthers(othersWithRank);
+  setLoading(false);
+};
+
 
   useEffect(() => {
     if (gw) handleFetch(gw);
@@ -190,9 +214,10 @@ export default function GWwinner() {
                       <div className="text-xs font-semibold px-2 py-1 rounded-md bg-white/70 text-gray-700 ring-1 ring-black/5">
                         GW {gw}
                       </div>
-                      <div className="mt-1 inline-flex items-center px-3 py-1 rounded-full text-sm font-extrabold text-blue-600 shadow-lg drop-shadow-md bg-white/80 ring-1 ring-black/5">
-                        League Position {row.rank}
-                      </div>
+<div className="mt-1 inline-flex items-center px-3 py-1 rounded-full text-sm font-extrabold text-blue-600 shadow-lg drop-shadow-md bg-white/80 ring-1 ring-black/5">
+  League Position {row.league_rank}
+</div>
+
                     </div>
                   </div>
 
@@ -274,7 +299,7 @@ export default function GWwinner() {
             <tbody className="divide-y divide-gray-100">
               {others.map((row, idx) => (
                 <tr key={row.manager_id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                  <td className="py-3 pl-5 pr-4 font-semibold">{row.rank}</td>
+                  <td className="py-3 pl-5 pr-4 font-semibold">{row.league_rank}</td>
                   <td className="py-3 px-4">
                     <div className="font-medium">{row.manager_name}</div>
                   </td>

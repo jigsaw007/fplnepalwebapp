@@ -150,6 +150,7 @@ app.get("/classic-league/:leagueId/:gameweek", async (req, res) => {
             team_name: entry.entry_name,
             total_points: entry.total,
             gameweek_score: gameweekData ? gameweekData.points : "N/A", // If not found, show N/A
+            rank: entry.rank,
           };
         } catch (error) {
           console.error(`Error fetching gameweek history for ${entry.entry}:`, error.message);
