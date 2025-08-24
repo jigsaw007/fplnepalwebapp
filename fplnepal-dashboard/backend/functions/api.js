@@ -986,10 +986,44 @@ app.get("/gw-top/:leagueId/:gameweek", async (req, res) => {
   try {
     const table = await getClassicLeagueAllPages(leagueId);
 
-    // Bootstrap for names + codes (for captain image)
+    // Bootstrap indices
     const { data: boot } = await axios.get(`${FPL_BASE_URL}/bootstrap-static/`, REQ_OPTS);
     const nameIndex = Object.fromEntries((boot?.elements || []).map(p => [p.id, p.web_name]));
-    const codeIndex = Object.fromEntries((boot?.elements || []).map(p => [p.id, p.code]));
+    const codeIndex = Object.fromEntries((boot?.elements || []).map(p => [p.id, p.code]));               // player photo code
+    const elementTypeIndex = Object.fromEntries((boot?.elements || []).map(p => [p.id, p.element_type])); // 1..4
+    const teamIdByElement = Object.fromEntries((boot?.elements || []).map(p => [p.id, p.team]));          // element -> teamId
+    const teamCodeByElement = Object.fromEntries((boot?.elements || []).map(p => [p.id, p.team_code]));   // element -> team_code (FOR KITS)
+
+    // Preload live GW points once
+    const { data: live } = await axios.get(`${FPL_BASE_URL}/event/${gw}/live/`, REQ_OPTS);
+    const livePts = Object.fromEntries((live?.elements || []).map(e => [e.id, e.stats?.total_points ?? 0]));
+
+    // picks[] -> compact squad rows
+function mapSquad(picksArr = []) {
+  return picksArr
+    .map(p => {
+      const id = p.element;
+      const team_id = teamIdByElement[id] ?? null;
+      const team_code = teamCodeByElement ? teamCodeByElement[id] ?? null : null; // you may or may not have this line
+      return {
+        id,
+        name: nameIndex[id] || `#${id}`,
+        element_type: elementTypeIndex[id] || 1,
+        position: p.position,
+        is_captain: !!p.is_captain,
+        is_vice_captain: !!p.is_vice_captain,
+        points: livePts[id] ?? 0,
+        team_id,               // already present (if not, keep it)
+        teamId: team_id,       // ⬅️ ADD THIS LINE (alias used by your client util)
+        team_code,             // (optional; safe to keep)
+        headshot: codeIndex[id]
+          ? `https://resources.premierleague.com/premierleague/photos/players/110x140/p${codeIndex[id]}.png`
+          : null,
+      };
+    })
+    .sort((a, b) => a.position - b.position);
+}
+
 
     const rows = await Promise.all(
       table.map(async (row) => {
@@ -999,12 +1033,12 @@ app.get("/gw-top/:leagueId/:gameweek", async (req, res) => {
             REQ_OPTS
           );
 
-          const eh = picks?.entry_history || {};         // net GW points (includes hits)
+          const eh = picks?.entry_history || {};
           const cap = (picks?.picks || []).find(p => p.is_captain);
-          const chip = picks?.active_chip ?? null;       // "3xc" | "bboost" | "freehit" | "wildcard" | null
+          const chip = picks?.active_chip ?? null;
 
           const captain_id = cap?.element ?? null;
-          const captain_code = captain_id ? codeIndex[captain_id] ?? null : null;
+          const captain_code = captain_id ? (codeIndex[captain_id] ?? null) : null;
 
           return {
             manager_id: row.entry,
@@ -1015,7 +1049,8 @@ app.get("/gw-top/:leagueId/:gameweek", async (req, res) => {
             captain_name: captain_id ? (nameIndex[captain_id] || `#${captain_id}`) : "N/A",
             captain_id,
             captain_code,
-            chip, // <-- added
+            chip,
+            squad: mapSquad(picks?.picks || []),
           };
         } catch {
           return {
@@ -1027,15 +1062,21 @@ app.get("/gw-top/:leagueId/:gameweek", async (req, res) => {
             captain_name: "N/A",
             captain_id: null,
             captain_code: null,
-            chip: null, // <-- added
+            chip: null,
+            squad: [],
           };
         }
       })
     );
 
-    const ranked = rows.sort((a,b)=>b.gw_points-a.gw_points)
-                       .map((r,i)=>({ rank:i+1, ...r }));
-    return res.json({ gameweek: gw, top3: ranked.slice(0,3), others: ranked.slice(3) });
+    const ranked = rows
+      .sort((a, b) => b.gw_points - a.gw_points)
+      .map((r, i) => ({ rank: i + 1, ...r }));
+
+    const top3 = ranked.slice(0, 3);
+    const others = ranked.slice(3).map(({ squad, ...rest }) => rest);
+
+    return res.json({ gameweek: gw, top3, others });
   } catch (err) {
     console.error("GW Winners error:", err?.message || err);
     return res.status(500).json({ error: "Failed to fetch GW winners" });

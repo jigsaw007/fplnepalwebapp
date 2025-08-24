@@ -1,7 +1,8 @@
 // src/pages/GWwinner.jsx
 import { useEffect, useMemo, useState } from "react";
-import { fetchFPLData, fetchGwTop } from "../api/fplApi";
-import { fetchClassicLeague } from "../api/fplApi";
+import { fetchFPLData, fetchGwTop, fetchClassicLeague } from "../api/fplApi";
+
+import SquadGrid from "../components/SquadGrid";
 
 const LEAGUE_ID = 235907;
 
@@ -265,6 +266,8 @@ const handleFetch = async (targetGw) => {
                         </div>
                       </div>
 
+                      
+
                       {/* Right: Chip badge (if any) */}
                       {chip && (
                         <span
@@ -276,6 +279,11 @@ const handleFetch = async (targetGw) => {
                       )}
                     </div>
                   </div>
+                  {/* Full squad (below Captain row) */}
+{Array.isArray(row.squad) && row.squad.length > 0 && (
+  <SquadGrid squad={row.squad} />
+)}
+
                 </div>
               </div>
             );
