@@ -1036,22 +1036,30 @@ function mapSquad(picksArr = []) {
           const eh = picks?.entry_history || {};
           const cap = (picks?.picks || []).find(p => p.is_captain);
           const chip = picks?.active_chip ?? null;
+          const vc = (picks?.picks || []).find(p => p.is_vice_captain);
+
+const vice_id = vc?.element ?? null;
+const vice_code = vice_id ? (codeIndex[vice_id] ?? null) : null;
+
 
           const captain_id = cap?.element ?? null;
           const captain_code = captain_id ? (codeIndex[captain_id] ?? null) : null;
 
-          return {
-            manager_id: row.entry,
-            manager_name: row.player_name,
-            team_name: row.entry_name,
-            gw_points: Number(eh.points ?? 0),
-            transfers_cost: Number(eh.event_transfers_cost ?? 0),
-            captain_name: captain_id ? (nameIndex[captain_id] || `#${captain_id}`) : "N/A",
-            captain_id,
-            captain_code,
-            chip,
-            squad: mapSquad(picks?.picks || []),
-          };
+return {
+  manager_id: row.entry,
+  manager_name: row.player_name,
+  team_name: row.entry_name,
+  gw_points: Number(eh.points ?? 0),
+  transfers_cost: Number(eh.event_transfers_cost ?? 0),
+  captain_name: captain_id ? (nameIndex[captain_id] || `#${captain_id}`) : "N/A",
+  captain_id,
+  captain_code,
+  vice_name: vice_id ? (nameIndex[vice_id] || `#${vice_id}`) : "N/A",   
+  vice_id,                                                           
+  vice_code,                                                   
+  chip,
+  squad: mapSquad(picks?.picks || []),
+};
         } catch {
           return {
             manager_id: row.entry,

@@ -239,50 +239,71 @@ const handleFetch = async (targetGw) => {
                   </div>
 
                   {/* Captain row: avatar + name (left)  |  chip badge (right, only if present) */}
-                  <div className="mt-4">
-                    <div className="text-[11px] uppercase tracking-wider text-gray-500">
-                      Captain Picked
-                    </div>
-                    <div className="mt-1 flex items-center justify-between gap-3">
-                      {/* Left: Avatar + Name */}
-                      <div className="flex items-center gap-3">
-                        {imgSrc ? (
-                          <img
-                            src={imgSrc}
-                            alt={`${row.captain_name} portrait`}
-                            className={`w-12 h-12 md:w-14 md:h-14 rounded-full object-cover ring-2 ${style.avatarRing} bg-white`}
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div
-                            className={`w-12 h-12 md:w-14 md:h-14 rounded-full grid place-items-center ring-2 ${style.avatarRing} bg-white text-xs text-gray-500`}
-                            title="No image"
-                          >
-                            N/A
-                          </div>
-                        )}
-                        <div className="text-base md:text-lg font-bold text-gray-900">
-                          {row.captain_name}
-                        </div>
-                      </div>
+{/* Captain & VC row */}
+<div className="mt-4">
+  <div className="text-[11px] uppercase tracking-wider text-gray-500">
+    Captain & Vice Captain
+  </div>
+  <div className="mt-1 flex items-center justify-between gap-3">
+    {/* Captain */}
+    <div className="flex items-center gap-3">
+      {imgSrc ? (
+        <img
+          src={imgSrc}
+          alt={`${row.captain_name} portrait`}
+          className={`w-12 h-12 md:w-14 md:h-14 rounded-full object-cover ring-2 ${style.avatarRing} bg-white`}
+          loading="lazy"
+        />
+      ) : (
+        <div
+          className={`w-12 h-12 md:w-14 md:h-14 rounded-full grid place-items-center ring-2 ${style.avatarRing} bg-white text-xs text-gray-500`}
+          title="No image"
+        >
+          N/A
+        </div>
+      )}
+      <div className="text-base md:text-lg font-bold text-gray-900">
+        C: {row.captain_name}
+      </div>
+    </div>
 
-                      
+    {/* Vice Captain */}
+    <div className="flex items-center gap-3">
+      {row.vice_code ? (
+        <img
+          src={`https://resources.premierleague.com/premierleague/photos/players/110x140/p${row.vice_code}.png`}
+          alt={`${row.vice_name} portrait`}
+          className={`w-10 h-10 md:w-12 md:h-12 rounded-full object-cover ring-2 ${style.avatarRing} bg-white`}
+          loading="lazy"
+        />
+      ) : (
+        <div
+          className={`w-10 h-10 md:w-12 md:h-12 rounded-full grid place-items-center ring-2 ${style.avatarRing} bg-white text-xs text-gray-500`}
+        >
+          N/A
+        </div>
+      )}
+      <div className="text-sm font-semibold text-gray-800">
+        VC: {row.vice_name}
+      </div>
+    </div>
 
-                      {/* Right: Chip badge (if any) */}
-                      {chip && (
-                        <span
-                          title={chip.title}
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-extrabold text-blue-600 shadow-lg drop-shadow-md ${chip.cls}`}
-                        >
-                          {chip.label}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+    {/* Chip badge */}
+    {chip && (
+      <span
+        title={chip.title}
+        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-extrabold text-blue-600 shadow-lg drop-shadow-md ${chip.cls}`}
+      >
+        {chip.label}
+      </span>
+    )}
+  </div>
+</div>
+
                   {/* Full squad (below Captain row) */}
-{Array.isArray(row.squad) && row.squad.length > 0 && (
+{/* {Array.isArray(row.squad) && row.squad.length > 0 && (
   <SquadGrid squad={row.squad} />
-)}
+)} */}
 
                 </div>
               </div>
