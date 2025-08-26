@@ -1,8 +1,12 @@
 // src/pages/GWwinner.jsx
 import { useEffect, useMemo, useState } from "react";
 import { fetchFPLData, fetchGwTop, fetchClassicLeague } from "../api/fplApi";
+import GwTopScoreBench from "../components/GwTopScoreBench";
+import GwTopScoreTransfer from "../components/GwTopScoreTransfer";
 
-import SquadGrid from "../components/SquadGrid";
+
+
+// import SquadGrid from "../components/SquadGrid";
 
 const LEAGUE_ID = 235907;
 
@@ -80,11 +84,14 @@ const handleFetch = async (targetGw) => {
     [events]
   );
 
-  // Captain headshot (PL images)
-  const captainImg = (row) =>
-    row?.captain_code
-      ? `https://resources.premierleague.com/premierleague/photos/players/110x140/p${row.captain_code}.png`
-      : null;
+// Captain SHIRT (FPL kit image, needs captain_team_code from backend)
+const shirtFromTeamCode = (teamCode) =>
+  teamCode
+    ? `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}-66.png`
+    : null;
+
+const captainImg = (row) => shirtFromTeamCode(row?.captain_team_code);
+
 
   // Chip mapping -> label + colors
   const chipInfo = (chip) => {
@@ -229,14 +236,28 @@ const handleFetch = async (targetGw) => {
                   <div className="text-sm text-gray-600">{row.team_name}</div>
 
                   {/* Score */}
-                  <div className="mt-4">
-                    <div className="text-[11px] uppercase tracking-wider text-gray-500">
-                      GW Score
-                    </div>
-                    <div className={`text-3xl md:text-4xl font-black ${style.score}`}>
-                      {row.gw_points}
-                    </div>
-                  </div>
+<div className="mt-4">
+  <div className="text-[11px] uppercase tracking-wider text-gray-500">
+    GW Score
+  </div>
+
+  {/* GW total + Bench + Transfers, inline */}
+  <div className="flex items-baseline gap-2">
+    <GwTopScoreBench
+      gwPoints={row.gw_points}
+      squad={row.squad}
+      chip={row.chip}
+      scoreClass={style.score}
+    />
+<GwTopScoreTransfer
+  transfersMade={row.event_transfers}
+  transfersCost={row.transfers_cost}
+  chip={row.chip}
+/>
+  </div>
+</div>
+
+
 
                   {/* Captain row: avatar + name (left)  |  chip badge (right, only if present) */}
 {/* Captain & VC row */}
@@ -269,13 +290,13 @@ const handleFetch = async (targetGw) => {
 
     {/* Vice Captain */}
     <div className="flex items-center gap-3">
-      {row.vice_code ? (
-        <img
-          src={`https://resources.premierleague.com/premierleague/photos/players/110x140/p${row.vice_code}.png`}
-          alt={`${row.vice_name} portrait`}
-          className={`w-10 h-10 md:w-12 md:h-12 rounded-full object-cover ring-2 ${style.avatarRing} bg-white`}
-          loading="lazy"
-        />
+{row.vice_team_code ? (
+  <img
+    src={shirtFromTeamCode(row.vice_team_code)}
+    alt={`${row.vice_name} kit`}
+    className={`w-10 h-10 md:w-12 md:h-12 rounded-full object-cover ring-2 ${style.avatarRing} bg-white`}
+    loading="lazy"
+  />
       ) : (
         <div
           className={`w-10 h-10 md:w-12 md:h-12 rounded-full grid place-items-center ring-2 ${style.avatarRing} bg-white text-xs text-gray-500`}

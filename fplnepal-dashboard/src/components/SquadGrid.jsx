@@ -1,6 +1,7 @@
 // src/components/SquadGrid.jsx
-import React, { useMemo } from "react";
+
 import { getTeamKit } from "../utils/teamData";
+import React, { useMemo, useState } from "react";
 
 export default function SquadGrid({ squad = [] }) {
   const { xi, bench, groups, formation } = useMemo(() => {
@@ -80,27 +81,40 @@ function PlayerBubble({ p, size = "lg" }) {
   const isC = p.is_captain;
   const isVC = p.is_vice_captain && !isC;
 
-  // widths/heights so rows don't wrap
   const wrapW  = size === "lg" ? "w-16" : "w-12";
   const imgH   = size === "lg" ? "h-14" : "h-10";
   const nameTx = size === "lg" ? "text-[10px]" : "text-[9px]";
   const ptsTx  = size === "lg" ? "text-[10px]" : "text-[9px]";
 
-  // Use same helper as Versus page
+  // existing
   const teamId = p.teamId ?? p.team_id ?? null;
   const kitUrl = teamId ? getTeamKit(teamId, p.element_type === 1 ? "GKP" : "OUTFIELD") : null;
+
+  // NEW: optional crest fallback if you have team_code on each player
+  const crestUrl = p.team_code
+    ? `https://resources.premierleague.com/premierleague/badges/70/t${p.team_code}.png`
+    : null;
+
+  // rotate through fallbacks: [kit, crest]
+  const srcs = [kitUrl, crestUrl].filter(Boolean);
+  const [srcIdx, setSrcIdx] = useState(srcs.length ? 0 : -1);
+
+  const handleError = () => {
+    // advance to next source; if none left, disable image (renders text tile)
+    setSrcIdx((i) => (i + 1 < srcs.length ? i + 1 : -1));
+  };
 
   return (
     <div className={`relative flex flex-col items-center ${wrapW}`}>
       <div className="relative w-full">
-        {kitUrl ? (
+        {srcIdx >= 0 ? (
           <img
-            src={kitUrl}
+            src={srcs[srcIdx]}
             alt={p.name}
             title={p.name}
             loading="lazy"
             className={`w-full ${imgH} object-contain bg-white ring ring-white shadow rounded-md`}
-            onError={(e) => { e.currentTarget.style.display = "none"; }}
+            onError={handleError}
           />
         ) : (
           <div
@@ -122,19 +136,10 @@ function PlayerBubble({ p, size = "lg" }) {
         )}
       </div>
 
-      {/* Name ribbon (white) */}
-      <div
-        className={`mt-1 w-full rounded-t-md bg-white text-gray-900 ${nameTx} font-semibold text-center px-1 py-0.5 leading-tight truncate`}
-        title={p.name}
-      >
+      <div className={`mt-1 w-full rounded-t-md bg-white text-gray-900 ${nameTx} font-semibold text-center px-1 py-0.5 leading-tight truncate`} title={p.name}>
         {p.name}
       </div>
-
-      {/* Points ribbon (FPL purple) */}
-      <div
-        className={`w-full rounded-b-md bg-purple-700 text-white ${ptsTx} font-bold text-center px-1 py-0.5`}
-        title={`${p.points} pts`}
-      >
+      <div className={`w-full rounded-b-md bg-purple-700 text-white ${ptsTx} font-bold text-center px-1 py-0.5`} title={`${p.points} pts`}>
         {p.points}
       </div>
     </div>

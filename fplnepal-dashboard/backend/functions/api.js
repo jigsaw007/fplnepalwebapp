@@ -1044,6 +1044,8 @@ const vice_code = vice_id ? (codeIndex[vice_id] ?? null) : null;
 
           const captain_id = cap?.element ?? null;
           const captain_code = captain_id ? (codeIndex[captain_id] ?? null) : null;
+          const captain_team_code = captain_id ? (teamCodeByElement[captain_id] ?? null) : null;
+const vice_team_code     = vice_id ? (teamCodeByElement[vice_id] ?? null) : null;
 
 return {
   manager_id: row.entry,
@@ -1051,12 +1053,15 @@ return {
   team_name: row.entry_name,
   gw_points: Number(eh.points ?? 0),
   transfers_cost: Number(eh.event_transfers_cost ?? 0),
+  event_transfers: Number(eh.event_transfers ?? 0),
   captain_name: captain_id ? (nameIndex[captain_id] || `#${captain_id}`) : "N/A",
   captain_id,
   captain_code,
+  captain_team_code,
   vice_name: vice_id ? (nameIndex[vice_id] || `#${vice_id}`) : "N/A",   
   vice_id,                                                           
-  vice_code,                                                   
+  vice_code,    
+  vice_team_code,                                               
   chip,
   squad: mapSquad(picks?.picks || []),
 };
