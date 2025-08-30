@@ -144,6 +144,14 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 >
   <span>🥇</span> <span>GW Winners</span>
 </NavLink>
+<NavLink
+  to="/league-stats"
+  className={({ isActive }) =>
+    `${linkBase} ${isActive ? linkActive : linkInactive}`
+  }
+>
+  <span>📈</span> <span>League Stats</span>
+</NavLink>
 
                 {/* <NavLink to="/headtohead-league" className={({ isActive }) => `${linkBase} ${isActive ? linkActive : linkInactive}`}> <span>🎯</span> <span>H2H League</span> </NavLink> */}
 
