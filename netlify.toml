@@ -3,6 +3,9 @@
   command = "npm install && npm run build"
   publish = "build"
 
+  [build.environment]
+  CI = "false" 
+
 [dev]
   command = "npm --prefix fplnepal-dashboard run start"
   targetPort = 3000
