@@ -113,13 +113,13 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               </p>
               <div className="space-y-1">
                 <NavLink
-  to="/captainmode"
-  className={({ isActive }) =>
-    `${linkBase} ${isActive ? linkActive : linkInactive}`
-  }
->
-  <span>👑</span> <span>Captain Mode</span>
-</NavLink>
+                  to="/captainmode"
+                  className={({ isActive }) =>
+                    `${linkBase} ${isActive ? linkActive : linkInactive}`
+                  }
+                >
+                  <span>👑</span> <span>Captain Mode</span>
+                </NavLink>
 
                 <NavLink to="/worldcup"
                   className={({ isActive }) =>
@@ -136,22 +136,34 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 >
                   <span>🏆</span> <span>Classic League</span>
                 </NavLink>
+
                 <NavLink
-  to="/gwwinner"
-  className={({ isActive }) =>
-    `${linkBase} ${isActive ? linkActive : linkInactive}`
-  }
->
-  <span>🥇</span> <span>GW Winners</span>
-</NavLink>
-<NavLink
-  to="/league-stats"
-  className={({ isActive }) =>
-    `${linkBase} ${isActive ? linkActive : linkInactive}`
-  }
->
-  <span>📈</span> <span>League Stats</span>
-</NavLink>
+                  to="/gwwinner"
+                  className={({ isActive }) =>
+                    `${linkBase} ${isActive ? linkActive : linkInactive}`
+                  }
+                >
+                  <span>🥇</span> <span>GW Winners</span>
+                </NavLink>
+
+                {/* NEW: Manager of the Month */}
+                <NavLink
+                  to="/monthly-winner"
+                  className={({ isActive }) =>
+                    `${linkBase} ${isActive ? linkActive : linkInactive}`
+                  }
+                >
+                  <span>🏅</span> <span>Manager of the Month</span>
+                </NavLink>
+
+                <NavLink
+                  to="/league-stats"
+                  className={({ isActive }) =>
+                    `${linkBase} ${isActive ? linkActive : linkInactive}`
+                  }
+                >
+                  <span>📈</span> <span>League Stats</span>
+                </NavLink>
 
                 {/* <NavLink to="/headtohead-league" className={({ isActive }) => `${linkBase} ${isActive ? linkActive : linkInactive}`}> <span>🎯</span> <span>H2H League</span> </NavLink> */}
 
@@ -171,20 +183,19 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                   }
                 >
                   <span>🧾</span> <span>Check Registration</span>
-                  
                 </NavLink>
+
                 <a
-  href="https://www.fplnepal.com/"
-  target="_blank"
-  rel="noopener noreferrer"
-  className={`${linkBase} ${linkInactive}`}
->
-  <span>🏡</span> <span>Homepage</span>
-</a>
+                  href="https://www.fplnepal.com/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`${linkBase} ${linkInactive}`}
+                >
+                  <span>🏡</span> <span>Homepage</span>
+                </a>
               </div>
             </div>
           </nav>
-
         </div>
       </aside>
     </>

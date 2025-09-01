@@ -1095,3 +1095,161 @@ return {
     return res.status(500).json({ error: "Failed to fetch GW winners" });
   }
 });
+
+// ===== AVAILABLE MONTHS IN A YEAR =====
+// GET /monthly-available?year=YYYY
+app.get("/monthly-available", async (req, res) => {
+  const year = Number(req.query.year);
+  if (!Number.isInteger(year)) {
+    return res.status(400).json({ error: "Provide year=YYYY" });
+  }
+  try {
+    const { data: boot } = await axios.get(`${FPL_BASE_URL}/bootstrap-static/`, REQ_OPTS);
+    const events = boot?.events || [];
+    const set = new Set(
+      events
+        .filter(e => {
+          const d = new Date(e.deadline_time);
+          return d.getUTCFullYear() === year;
+        })
+        .map(e => (new Date(e.deadline_time).getUTCMonth() + 1))
+    );
+    const months = Array.from(set).sort((a, b) => a - b);
+    return res.json({ year, months });
+  } catch (err) {
+    console.error("monthly-available error:", err?.message || err);
+    return res.status(500).json({ error: "Failed to fetch available months" });
+  }
+});
+
+// ===== MONTHLY WINNER WITH PER-GW CAPTAIN/CHIP & LEAGUE RANK =====
+// GET /monthly-winner/:leagueId?year=YYYY&month=MM   (MM=1..12, or 0 for ALL GWs in that year)
+app.get("/monthly-winner/:leagueId", async (req, res) => {
+  const leagueId = String(req.params.leagueId).trim();
+  const year = Number(req.query.year);
+  const month = Number(req.query.month); // 0 = ALL
+
+  if (!leagueId || !Number.isInteger(year) || !Number.isInteger(month) || month < 0 || month > 12) {
+    return res.status(400).json({ error: "Provide leagueId, year=YYYY, month=0..12" });
+  }
+
+  try {
+    // 1) Fetch full league table (for all pages)
+    const table = await getClassicLeagueAllPages(leagueId); // you already have this helper
+
+    // 2) Bootstrap for events and element mapping (players/teams)
+    const { data: boot } = await axios.get(`${FPL_BASE_URL}/bootstrap-static/`, REQ_OPTS);
+    const events = boot?.events || [];
+    const elements = boot?.elements || [];
+    const teams = boot?.teams || [];
+    const teamShortById = new Map(teams.map(t => [t.id, t.short_name]));
+    const playerById = new Map(
+      elements.map(el => [el.id, { web_name: el.web_name, team_short: teamShortById.get(el.team) || "" }])
+    );
+
+    // 3) Determine which GWs are in the requested bucket
+    const monthGwIds = events
+      .filter(e => {
+        const d = new Date(e.deadline_time);
+        const m = d.getUTCMonth() + 1;
+        return d.getUTCFullYear() === year && (month === 0 ? true : m === month);
+      })
+      .map(e => e.id);
+
+    if (monthGwIds.length === 0) {
+      return res.json({
+        leagueId, year, month,
+        gameweeks: [],
+        standings: [],
+        winner: null,
+        winner_gw_breakdown: [],
+        winner_league_rank: null
+      });
+    }
+
+    // 4) For each manager in the league, compute monthly sum and keep per-GW details
+    const rows = await Promise.all(
+      table.map(async (row) => {
+        let monthlyNet = 0;
+        const gwDetails = [];
+
+        for (const gw of monthGwIds) {
+          try {
+            const { data: picks } = await axios.get(
+              `${FPL_BASE_URL}/entry/${row.entry}/event/${gw}/picks/`,
+              REQ_OPTS
+            );
+            const eh = picks?.entry_history || {};
+            const pts = Number(eh.points ?? 0);
+            const hits = Number(eh.event_transfers_cost ?? 0);
+            const net = pts - hits;
+            const chip = picks?.active_chip || null;
+
+            // find captain from picks
+            let captain = null;
+            if (Array.isArray(picks?.picks)) {
+              const capPick = picks.picks.find(p => p.is_captain);
+              if (capPick && playerById.has(capPick.element)) {
+                const info = playerById.get(capPick.element);
+                captain = {
+                  id: capPick.element,
+                  name: info.web_name,
+                  team: info.team_short
+                };
+              }
+            }
+
+            monthlyNet += net;
+            gwDetails.push({ gw, points: pts, hits, net, chip, captain });
+          } catch {
+            gwDetails.push({ gw, points: 0, hits: 0, net: 0, chip: null, captain: null });
+          }
+        }
+
+        // league rank from table, if available
+        const league_rank = row?.rank ?? null;
+
+        return {
+          manager_id: row.entry,
+          manager_name: row.player_name,
+          team_name: row.entry_name,
+          league_rank,
+          monthly_net_points: monthlyNet,
+          _gw_details: gwDetails,
+        };
+      })
+    );
+
+    const standings = rows
+      .sort((a, b) => b.monthly_net_points - a.monthly_net_points)
+      .map((r, i) => ({
+        rank: i + 1,
+        manager_id: r.manager_id,
+        manager_name: r.manager_name,
+        team_name: r.team_name,
+        league_rank: r.league_rank,
+        monthly_net_points: r.monthly_net_points,
+      }));
+
+    const winner = standings[0] || null;
+    const winner_gw_breakdown = winner
+      ? (rows.find(r => r.manager_id === winner.manager_id)?._gw_details || [])
+      : [];
+    const winner_league_rank = winner?.league_rank ?? null;
+
+    return res.json({
+      leagueId,
+      year,
+      month,
+      gameweeks: monthGwIds,
+      winner,
+      standings,
+      winner_gw_breakdown,
+      winner_league_rank
+    });
+  } catch (err) {
+    console.error("Monthly Winner error:", err?.message || err);
+    return res.status(500).json({ error: "Failed to compute monthly winner" });
+  }
+});
+

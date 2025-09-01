@@ -32,6 +32,8 @@ import GroupsPage from './pages/WorldCup/Groups';
 import CaptainMode from "./pages/CaptainMode";
 import GWwinner from "./pages/GWwinner";
 import LeagueStats from "./pages/LeagueStats";
+import MonthlyWinner from "./pages/MonthlyWinner";
+
 
 
 const AppInner = () => {
@@ -87,6 +89,7 @@ const AppInner = () => {
                 <Route path="/captainmode" element={<CaptainMode />} />
                 <Route path="/gwwinner" element={<GWwinner />} />
                  <Route path="/league-stats" element={<LeagueStats />} />
+                 <Route path="/monthly-winner" element={<MonthlyWinner />} />
 
 
 

@@ -49,5 +49,11 @@
     "eslint": "^8.57.1",
     "eslint-config-react-app": "^7.0.1",
     "postcss": "^8.5.3"
+  },
+  "eslintConfig": {
+    "extends": [
+      "react-app",
+      "react-app/jest"
+    ]
   }
 }

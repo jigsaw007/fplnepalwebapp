@@ -275,3 +275,28 @@ export const fetchGwTop = async (leagueId, gameweek) => {
   return res.json(); // { gameweek, top3, others }
 };
 
+
+
+export const fetchMonthlyAvailable = async (year) => {
+  try {
+    const res = await fetch(`${BASE_URL}/monthly-available?year=${year}`);
+    if (!res.ok) throw new Error("Failed to fetch available months");
+    return await res.json(); // {year, months:[...]}
+  } catch (e) {
+    console.error("fetchMonthlyAvailable error:", e);
+    return { year, months: [] };
+  }
+};
+
+export const fetchMonthlyWinner = async (leagueId, year, month) => {
+  try {
+    const res = await fetch(`${BASE_URL}/monthly-winner/${leagueId}?year=${year}&month=${month}`);
+    if (!res.ok) throw new Error("Failed to fetch monthly winner");
+    return await res.json();
+  } catch (e) {
+    console.error("fetchMonthlyWinner error:", e);
+    return null;
+  }
+};
+
+
