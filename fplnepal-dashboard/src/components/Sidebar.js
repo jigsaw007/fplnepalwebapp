@@ -157,6 +157,26 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 </NavLink>
 
                 <NavLink
+  to="/elimination"
+  className={({ isActive }) =>
+    `${linkBase} ${isActive ? linkActive : linkInactive}`
+  }
+>
+  <span>🗑️</span> <span>Elimination</span>
+</NavLink>
+
+{localStorage.getItem("admin_key") && (
+  <NavLink
+    to="/elimination-admin"
+    className={({ isActive }) =>
+      `${linkBase} ${isActive ? linkActive : linkInactive}`
+    }
+  >
+    <span>🔒</span> <span>Elimination Admin</span>
+  </NavLink>
+)}
+
+                <NavLink
                   to="/league-stats"
                   className={({ isActive }) =>
                     `${linkBase} ${isActive ? linkActive : linkInactive}`
@@ -174,6 +194,8 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 >
                   <span>🔍</span> <span>Tie Analyzer</span>
                 </NavLink>
+
+
 
                 {/* <NavLink to="/h2htopscorer" className={({ isActive }) => `${linkBase} ${isActive ? linkActive : linkInactive}`}> <span>⭐</span> <span>H2H Top Scorer</span> </NavLink> */}
 

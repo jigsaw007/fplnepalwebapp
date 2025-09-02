@@ -33,6 +33,9 @@ import CaptainMode from "./pages/CaptainMode";
 import GWwinner from "./pages/GWwinner";
 import LeagueStats from "./pages/LeagueStats";
 import MonthlyWinner from "./pages/MonthlyWinner";
+import Elimination from "./pages/Elimination";            // public
+import EliminationAdmin from "./pages/EliminationAdmin";  // admin
+
 
 
 
@@ -90,6 +93,8 @@ const AppInner = () => {
                 <Route path="/gwwinner" element={<GWwinner />} />
                  <Route path="/league-stats" element={<LeagueStats />} />
                  <Route path="/monthly-winner" element={<MonthlyWinner />} />
+                 <Route path="/elimination" element={<Elimination />} />     
+<Route path="/elimination-admin" element={<EliminationAdmin />} /> 
 
 
 
