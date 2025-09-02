@@ -7,6 +7,37 @@ require("dotenv").config();
 const app = express();
 // const PORT = process.env.PORT || 5000;
 
+ const { createClient } = require("@supabase/supabase-js");
+ const SUPABASE_URL = process.env.SUPABASE_URL;
+ const SUPABASE_SERVICE_ROLE = process.env.SUPABASE_SERVICE_ROLE;
+ const supabase =
+   (SUPABASE_URL && SUPABASE_SERVICE_ROLE)
+     ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE)
+     : null;
+
+function requireSB(res) {
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE) {
+    res.status(500).json({ error: "Supabase not configured" });
+    return false;
+  }
+  return true;
+}
+
+
+const ADMIN_TOKEN = process.env.ADMIN_TOKEN;
+function requireAdmin(req, res) {
+  const hdr = req.headers["x-admin-token"] || req.headers["authorization"] || "";
+  const raw = hdr.replace(/^Bearer\s+/i, "");
+  let token = raw;
+  try { token = decodeURIComponent(raw); } catch {} // accept percent-encoded header
+  if (!ADMIN_TOKEN || token !== ADMIN_TOKEN) {
+    res.status(401).json({ error: "Unauthorized" });
+    return false;
+  }
+  return true;
+}
+
+
 const corsOptions = {
     origin: [
         "https://fplnepaldashboard.netlify.app",
@@ -14,7 +45,7 @@ const corsOptions = {
         "http://localhost:3000", // local dev
       ],
   methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization","X-Admin-Token"],
 };
 app.use(cors(corsOptions));
 
@@ -1253,3 +1284,227 @@ app.get("/monthly-winner/:leagueId", async (req, res) => {
   }
 });
 
+// ----- Rules -----
+app.get("/elimination/rules", async (req, res) => {
+  if (!requireSB(res)) return;
+  const { gw } = req.query;
+  try {
+    if (gw) {
+      const { data, error } = await supabase
+        .from("elimination_rules").select("*").eq("gw", Number(gw)).maybeSingle();
+      if (error) throw error;
+      return res.json(data || null);
+    }
+    const { data, error } = await supabase
+      .from("elimination_rules").select("*").order("gw");
+    if (error) throw error;
+    res.json(data);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post("/elimination/rules", express.json(), async (req, res) => {
+  
+  if (!requireAdmin(req, res)) return;
+  const { gw, eliminate_count } = req.body || {};
+  if (!Number.isInteger(gw) || !Number.isInteger(eliminate_count) || eliminate_count < 0) {
+    return res.status(400).json({ error: "Provide gw and eliminate_count >= 0" });
+  }
+  try {
+    const { data, error } = await supabase
+      .from("elimination_rules")
+      .upsert({ gw, eliminate_count }, { onConflict: "gw" })
+      .select("*").maybeSingle();
+    if (error) throw error;
+    res.json(data);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ----- Candidates -----
+async function getLeagueAllPages(leagueId) {
+  // uses FPL classic standings pages
+  let page = 1, results = [], more = true;
+  while (more) {
+    const { data } = await axios.get(`${FPL_BASE_URL}/leagues-classic/${leagueId}/standings/?page_new_entries=1&page_standings=${page}&phase=1`, REQ_OPTS);
+    const standings = data?.standings?.results || [];
+    results = results.concat(standings);
+    const total = data?.standings?.total || 0;
+    const per = data?.standings?.per_page || standings.length || 50;
+    more = page * per < total;
+    page++;
+  }
+  return results; // [{entry, entry_name, player_name}, ...]
+}
+
+app.get("/elimination/candidates/:leagueId/:gw", async (req, res) => {
+  const { leagueId, gw } = req.params;
+  const net = String(req.query.net || "true").toLowerCase() === "true";
+  try {
+    const table = await getClassicLeagueAllPages(leagueId);
+      if (!Array.isArray(table) || table.length === 0) {
+    console.error("No standings found for league", leagueId);
+    return res.status(500).json({ error: "No standings found for this league" });
+  }
+
+    // exclude already eliminated before this GW
+    let eliminatedSet = new Set();
+    if (supabase) {
+      const { data: elims, error } = await supabase
+        .from("eliminated_managers").select("entry_id").lt("gw", Number(gw));
+      if (error) throw error;
+      eliminatedSet = new Set(elims.map(e => e.entry_id));
+    }
+    const active = table.filter(r => !eliminatedSet.has(r.entry));
+
+    // fetch each entry GW points
+    const rows = await Promise.all(active.map(async (r) => {
+      try {
+        const { data: picks } = await axios.get(
+          `${FPL_BASE_URL}/entry/${r.entry}/event/${Number(gw)}/picks/`, REQ_OPTS
+        );
+        const eh = picks?.entry_history || {};
+        const gw_points = Number(eh.points ?? 0);
+        const hits = Number(eh.event_transfers_cost ?? 0);
+        const season_total = Number(eh.total_points ?? 0);
+        return {
+          entry_id: r.entry,
+          manager_name: r.player_name,
+          team_name: r.entry_name,
+          gw_points,
+          hits,
+          net_points: gw_points - hits,
+          season_total
+        };
+      } catch {
+        return {
+          entry_id: r.entry,
+          manager_name: r.player_name,
+          team_name: r.entry_name,
+          gw_points: 0, hits: 0, net_points: 0, season_total: null
+        };
+      }
+    }));
+
+    // rule for this GW
+    let eliminate_count = 0;
+    if (supabase) {
+      const { data: rule } = await supabase
+        .from("elimination_rules").select("*").eq("gw", Number(gw)).maybeSingle();
+      eliminate_count = rule?.eliminate_count ?? 0;
+    }
+
+    rows.sort((a,b) => {
+      const pa = net ? a.net_points : a.gw_points;
+      const pb = net ? b.net_points : b.gw_points;
+      return pa - pb
+        || (a.season_total ?? 0) - (b.season_total ?? 0)
+        || b.hits - a.hits
+        || a.entry_id - b.entry_id;
+    });
+    const suggested = eliminate_count ? rows.slice(0, eliminate_count) : [];
+    res.json({ gameweek: Number(gw), net, eliminate_count, candidates: rows, suggested });
+  } catch (e) {
+    res.status(500).json({ error: "Failed to compute candidates" });
+  }
+});
+
+// ----- Confirm -----
+app.post("/elimination/confirm", express.json(), async (req, res) => {
+  if (!requireAdmin(req, res)) return;
+  const { gameweek, eliminations } = req.body || {};
+  if (!Number.isInteger(Number(gameweek)) || !Array.isArray(eliminations)) {
+    return res.status(400).json({ error: "Provide gameweek and eliminations[]" });
+  }
+  try {
+    const rows = eliminations.map(e => ({
+      entry_id: Number(e.entry_id),
+      gw: Number(gameweek),
+      gw_points: Number(e.gw_points ?? 0),
+      season_total: Number(e.season_total ?? 0),
+      hits: Number(e.hits ?? 0)
+    }));
+    const { error } = await supabase
+      .from("eliminated_managers")
+      .upsert(rows, { onConflict: "entry_id,gw" });
+    if (error) throw error;
+    res.json({ ok: true, count: rows.length });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+// ----- Read eliminated (optional) -----
+app.get("/elimination/eliminated", async (req, res) => {
+  if (!requireSB(res)) return;
+  const upto = Number(req.query.upto || 0);
+  try {
+    let q = supabase.from("eliminated_managers").select("*").order("gw");
+    if (upto > 0) q = q.lte("gw", upto);
+    const { data, error } = await q;
+    if (error) throw error;
+    res.json(data);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.get("/fpl-data", async (req, res) => {
+  try {
+    const { data } = await axios.get(
+      "https://fantasy.premierleague.com/api/bootstrap-static/"
+    );
+    res.json(data);
+  } catch (e) {
+    console.error("fpl-data error:", e?.response?.status, e?.message);
+    res.status(500).json({ error: "Failed to fetch FPL data" });
+  }
+});
+
+// Eliminated in a specific GW (public)
+// api.js
+app.get("/elimination/public/eliminated/:gw", async (req, res) => {
+  try {
+    const gw = Number(req.params.gw);
+    if (!Number.isInteger(gw)) return res.status(400).json({ error: "Bad GW" });
+    if (!supabase) return res.json([]);              // <— add this guard
+
+    const { data, error } = await supabase
+      .from("eliminated_managers")
+      .select("*")
+      .eq("gw", gw)
+      .order("gw_points", { ascending: true });
+    if (error) throw error;
+    res.json(data || []);
+  } catch {
+    res.status(500).json({ error: "Failed to fetch eliminated" });
+  }
+});
+
+// Remaining managers after a GW (public)
+app.get("/elimination/public/remaining/:leagueId/:gw", async (req, res) => {
+  try {
+    const leagueId = req.params.leagueId;
+    const gw = Number(req.params.gw);
+    const table = await getClassicLeagueAllPages(leagueId); // your existing helper
+    let eliminatedSet = new Set();
+    if (supabase) {
+      const { data: elims, error } = await supabase
+        .from("eliminated_managers")
+        .select("entry_id")
+        .lte("gw", gw);
+      if (error) throw error;
+      eliminatedSet = new Set(elims.map((e) => e.entry_id));
+    }
+    const remaining = table
+      .filter((r) => !eliminatedSet.has(r.entry))
+      .map((r) => ({
+        entry_id: r.entry,
+        manager_name: r.player_name,
+        team_name: r.entry_name,
+      }));
+    res.json({ count: remaining.length, remaining });
+  } catch {
+    res.status(500).json({ error: "Failed to fetch remaining" });
+  }
+});
+
+// Ping: verify admin token; used to gate the admin page UI
+app.get("/elimination/admin/ping", (req, res) => {
+  if (!requireAdmin(req, res)) return; // uses your existing middleware
+  res.json({ ok: true });
+});

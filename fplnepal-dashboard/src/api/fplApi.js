@@ -247,19 +247,24 @@ export const fetchVersusHistory = async (teamId1, teamId2, gameweek) => {
 };
 
 
-export const fetchManagerInfo = async (entryId) => {
+export async function fetchManagerInfo(entryId) {
   try {
-    const res = await fetch(`/api/entry/${entryId}/`);
+    const res = await fetch(`${BASE_URL}/user-history/${entryId}`);
+    if (!res.ok) throw new Error(`manager-info fetch failed (${res.status})`);
     const data = await res.json();
+
+    // Normalize to UI shape
     return {
-      name: `${data.player_first_name} ${data.player_last_name}`,
-      teamName: data.name,
+      manager_name: (data?.name || "").trim(),     
+      team_name: data?.team_name || "",            
     };
-  } catch (error) {
-    console.error("Error in fetchManagerInfo:", error);
+  } catch (e) {
+    console.error("Error in fetchManagerInfo:", e);
     return null;
   }
-};
+}
+
+
 
 
 export const fetchCaptainStandings = async (leagueId, mode) => {
@@ -299,4 +304,71 @@ export const fetchMonthlyWinner = async (leagueId, year, month) => {
   }
 };
 
+export const fetchEliminationRules = async (gw) => {
+  const url = gw ? `${BASE_URL}/elimination/rules?gw=${gw}` : `${BASE_URL}/elimination/rules`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("rules fetch failed");
+  return r.json();
+};
+// src/pages/api/fplApi.js
+export const upsertEliminationRule = async (gw, eliminate_count) => {
+  const admin = localStorage.getItem("admin_key") || "";
+  const r = await fetch(`${BASE_URL}/elimination/rules`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Admin-Token": admin,                 // <— add this
+    },
+    body: JSON.stringify({ gw, eliminate_count }),
+  });
+  if (!r.ok) throw new Error("rule save failed");
+  return r.json();
+};
 
+export const fetchEliminationCandidates = async (leagueId, gw, net = true) => {
+  const r = await fetch(`${BASE_URL}/elimination/candidates/${leagueId}/${gw}?net=${net}`);
+  if (!r.ok) throw new Error("candidates fetch failed"); return r.json();
+};
+export const confirmEliminations = async (gameweek, eliminations) => {
+  const admin = localStorage.getItem("admin_key") || "";
+  const res = await fetch(`${BASE_URL}/elimination/confirm`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Admin-Token": admin,
+    },
+    body: JSON.stringify({ gameweek, eliminations }),
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(text || "Failed to confirm eliminations");
+  try { return JSON.parse(text); } catch { return { ok: true }; }
+};
+
+export const fetchEliminatedSoFar = async (uptoGW) => {
+  const url = typeof uptoGW === "number"
+    ? `${BASE_URL}/elimination/eliminated?upto=${uptoGW}`
+    : `${BASE_URL}/elimination/eliminated`;
+  const r = await fetch(url);
+  if (!r.ok) throw new Error("eliminated fetch failed"); return r.json();
+};
+// Public endpoints: eliminated in a GW, and remaining after a GW
+export const fetchEliminatedByGW = async (gw) => {
+  const r = await fetch(`${BASE_URL}/elimination/public/eliminated/${gw}`);
+  if (!r.ok) throw new Error("Failed to load eliminated");
+  return r.json();
+};
+
+export const fetchRemainingAfterGW = async (leagueId, gw) => {
+  const r = await fetch(`${BASE_URL}/elimination/public/remaining/${leagueId}/${gw}`);
+  if (!r.ok) throw new Error("Failed to load remaining");
+  return r.json();
+};
+
+
+export const adminPing = async () => {
+  const admin = localStorage.getItem("admin_key") || "";
+  const r = await fetch(`${BASE_URL}/elimination/admin/ping`, {
+    headers: { "X-Admin-Token": admin },
+  });
+  return r.ok;
+};
