@@ -41,9 +41,25 @@ const Spinner = ({ size = 24, message = "Loading..This might take few seconds." 
   </div>
 );
 
-
 const DEFAULT_LEAGUE_ID = "235907";
-const ALL_GWS_ASC = Array.from({ length: 38 }, (_, i) => i + 1);
+
+// Small concurrency runner
+async function runWithLimit(tasks, limit = 4) {
+  const results = new Array(tasks.length);
+  let i = 0;
+  const workers = Array.from({ length: Math.min(limit, tasks.length) }, async () => {
+    for (; i < tasks.length; ) {
+      const cur = i++;
+      try {
+        results[cur] = await tasks[cur]();
+      } catch {
+        results[cur] = null;
+      }
+    }
+  });
+  await Promise.all(workers);
+  return results;
+}
 
 // Stage chip
 function stageForGW(gw) {
@@ -51,16 +67,6 @@ function stageForGW(gw) {
   if (gw >= 14 && gw <= 24) return "Stage 2";
   if (gw >= 25 && gw <= 37) return "Stage 3";
   if (gw === 38) return "Final";
-  return null;
-}
-
-// Small helper: build a safe display name
-function displayName(rec) {
-  const mgr = rec?.manager_name?.trim();
-  const team = rec?.team_name?.trim();
-  if (mgr && team) return `${mgr} — ${team}`;
-  if (mgr) return mgr;
-  if (team) return team;
   return null;
 }
 
@@ -76,9 +82,10 @@ function EliminatedRow({ gw, row, namesById, ensureName }) {
 
   const mgr = nameObj?.manager_name?.trim();
   const team = nameObj?.team_name?.trim();
-  const primary = mgr && team ? `${mgr} — ${team}` : (mgr || team || `Entry ${row.entry_id}`);
+  const primary =
+    mgr && team ? `${mgr} — ${team}` : (mgr || team || `Entry ${row.entry_id}`);
 
-  // Compute "net" the same way as in candidates: points - hits (hits is a positive cost value)
+  // Compute net = points - hits (hits is positive cost)
   const hasHits = typeof row.hits === "number";
   const net = hasHits ? (Number(row.gw_points || 0) - Number(row.hits || 0)) : row.gw_points;
 
@@ -104,7 +111,6 @@ function EliminatedRow({ gw, row, namesById, ensureName }) {
     </li>
   );
 }
-
 
 function GWCard({ gw, dateLabel, eliminated, remainingCount, namesById, expectedElims, ensureName }) {
   const stage = stageForGW(gw);
@@ -179,11 +185,10 @@ function GWCard({ gw, dateLabel, eliminated, remainingCount, namesById, expected
   );
 }
 
-
 export default function Elimination() {
   const [leagueId] = useState(DEFAULT_LEAGUE_ID);
-  const [events, setEvents] = useState([]); // bootstrap-static events
-  const [latestFinished, setLatestFinished] = useState(1);
+  const [events, setEvents] = useState([]);       // bootstrap-static events
+  const [latestFinished, setLatestFinished] = useState(0);
 
   // Map<string, {manager_name, team_name}>
   const [namesById, setNamesById] = useState(new Map());
@@ -197,31 +202,29 @@ export default function Elimination() {
   const [loadingCards, setLoadingCards] = useState(false);
 
   // ensureName: fetch on-demand and cache in namesById (keyed by String(id))
-const ensureName = async (entryId) => {
-  const key = String(entryId);
-  const existing = namesById.get(key);
+  const ensureName = async (entryId) => {
+    const key = String(entryId);
+    const existing = namesById.get(key);
 
-  // Only skip if we already have a real name (not a placeholder)
-  if (existing && existing.manager_name && !/^Entry\s/.test(existing.manager_name)) return;
+    // Only skip if we already have a real name (not a placeholder)
+    if (existing && existing.manager_name && !/^Entry\s/.test(existing.manager_name)) return;
 
-  try {
-    const info = await fetchManagerInfo(entryId); // now returns {manager_name, team_name}
-    if (info) {
-      setNamesById((prev) => {
-        const m = new Map(prev);
-        m.set(key, {
-          manager_name: info.manager_name || `Entry ${entryId}`,
-          team_name: info.team_name || "",
+    try {
+      const info = await fetchManagerInfo(entryId); // {manager_name, team_name}
+      if (info) {
+        setNamesById((prev) => {
+          const m = new Map(prev);
+          m.set(key, {
+            manager_name: info.manager_name || `Entry ${entryId}`,
+            team_name: info.team_name || "",
+          });
+          return m;
         });
-        return m;
-      });
+      }
+    } catch {
+      // don't cache a permanent placeholder on error; try again on next render if needed
     }
-  } catch {
-    // don't cache a permanent placeholder on error; try again next render if needed
-  }
-};
-
-
+  };
 
   // 1) bootstrap + league standings (for names) + latest finished GW
   useEffect(() => {
@@ -260,6 +263,12 @@ const ensureName = async (entryId) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Compute finished GWs list (1..latestFinished)
+  const gwsFinished = useMemo(
+    () => Array.from({ length: Math.max(latestFinished || 0, 0) }, (_, i) => i + 1),
+    [latestFinished]
+  );
+
   // helper: date under GW title
   const dateLabelForGW = (gw) => {
     const e = events.find((x) => x.id === gw);
@@ -276,14 +285,14 @@ const ensureName = async (entryId) => {
     }
   };
 
-  // Build a single GW card (ASC 1→38)
+  // Build a single GW card
   const fetchGWCard = async (gw) => {
     const [elim, remaining, rule] = await Promise.all([
       fetchEliminatedByGW(gw).catch(() => []),
       fetchRemainingAfterGW(leagueId, gw).catch(() => ({ count: 0, remaining: [] })),
       fetchEliminationRules(gw).catch(() => null),
     ]);
-    // kick off ensureName for any eliminated IDs we don't know yet (fire & forget)
+    // fire & forget ensureName for any eliminated IDs we don't know yet
     (elim || []).forEach((r) => {
       const k = String(r.entry_id);
       if (!namesById.has(k)) ensureName(r.entry_id);
@@ -297,25 +306,23 @@ const ensureName = async (entryId) => {
     };
   };
 
-  // 2) Load ALL 38 GWs (ASC 1 → 38)
+  // 2) Load only FINISHED GWs, newest first, with limited concurrency
   useEffect(() => {
     (async () => {
+      if (!gwsFinished.length) return;
       setLoadingCards(true);
       try {
-        const results = [];
-        for (const gw of ALL_GWS_ASC) {
-          // sequential to avoid hammering; change to Promise.allSettled if you prefer
-          // but keeping it tame is friendly to the FPL API.
-          const card = await fetchGWCard(gw);
-          results.push(card);
-        }
-        setCards(results);
+        const newestFirst = [...gwsFinished].sort((a, b) => b - a);
+        const tasks = newestFirst.map((gw) => () => fetchGWCard(gw));
+        const results = await runWithLimit(tasks, 4);
+        // keep newest first in state
+        setCards(results.filter(Boolean));
       } finally {
         setLoadingCards(false);
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [events.length]);
+  }, [gwsFinished.length]);
 
   // 3) Remaining AFTER latest finished GW for the right sidebar
   useEffect(() => {
@@ -352,11 +359,10 @@ const ensureName = async (entryId) => {
     <div className="max-w-7xl mx-auto px-4 py-6">
       <div className="mb-4">
         <h1 className="text-2xl font-bold">FPL NEPAL Elimination League 25|26</h1>
-
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">
-        {/* LEFT: all GWs 1 → 38 */}
+        {/* LEFT: finished GWs (newest first) */}
         <div className="md:col-span-2 space-y-4">
           {leftCards.map((c) => (
             <GWCard
@@ -370,37 +376,35 @@ const ensureName = async (entryId) => {
               ensureName={ensureName}
             />
           ))}
-{loadingCards ? (
-  <div className="flex items-center justify-center py-6">
-    <Spinner size={24} message="Loading..This might take few seconds." />
-  </div>
-) : (
-  <div className="text-center text-sm text-gray-500">All 38 gameweeks displayed.</div>
-)}
 
-
+          {loadingCards ? (
+            <div className="flex items-center justify-center py-6">
+              <Spinner size={24} message="Loading..This might take few seconds." />
+            </div>
+          ) : (
+            <div className="text-center text-sm text-gray-500">
+              Showing {cards.length} finished gameweeks.
+            </div>
+          )}
         </div>
 
         {/* RIGHT: Remaining full list after latest finished */}
         <aside className="md:col-span-1">
           <div className="border rounded-xl p-3 bg-white shadow-sm sticky top-4 max-h-[85vh] overflow-auto">
             <div className="flex items-center justify-between mb-1">
-              <div className="font-medium">
-                Remaining Managers
-              </div>
+              <div className="font-medium">Remaining Managers</div>
               <div className="text-sm">
                 <span className="font-semibold">{remainingNow?.count ?? 0}</span>
               </div>
             </div>
 
             <div className="mt-2">
-{loadingRemaining ? (
-  <div className="flex items-center justify-center py-6">
-    <Spinner size={20} />
-    <span className="sr-only">Loading remaining…</span>
-  </div>
-) : remainingNow?.remaining?.length ? (
-
+              {loadingRemaining ? (
+                <div className="flex items-center justify-center py-6">
+                  <Spinner size={20} />
+                  <span className="sr-only">Loading remaining…</span>
+                </div>
+              ) : remainingNow?.remaining?.length ? (
                 <table className="min-w-full text-sm">
                   <thead className="bg-gray-100 sticky top-0 z-10">
                     <tr>
