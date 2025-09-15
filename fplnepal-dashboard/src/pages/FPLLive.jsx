@@ -6,7 +6,7 @@ import { fetchFplLive } from "../api/fplApi";
 const shirtUrl = (team_code) =>
   `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${team_code}-66.png`;
 
-/* -------------------- CHIP ICONS (SVG) -------------------- */
+/* -------------------- CHIP ICONS (SVG) -------------------^- */
 const ChipIcon = ({ chip, className = "" }) => {
   if (!chip) return null;
   const base = "inline-flex items-center justify-center rounded border shadow-sm " + className;
