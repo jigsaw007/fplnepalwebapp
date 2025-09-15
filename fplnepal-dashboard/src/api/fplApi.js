@@ -372,3 +372,11 @@ export const adminPing = async () => {
   });
   return r.ok;
 };
+
+// FPLLIVE: compute final-like GW total after autosubs/bonus/hits
+export const fetchFplLive = async (teamId, gw) => {
+  const res = await fetch(`${BASE_URL}/fpl-live/${teamId}/${gw}`);
+  if (!res.ok) throw new Error("Failed to fetch FPLLIVE");
+  return res.json();
+};
+

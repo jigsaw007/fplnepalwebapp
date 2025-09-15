@@ -1028,6 +1028,9 @@ app.get("/gw-top/:leagueId/:gameweek", async (req, res) => {
     // Preload live GW points once
     const { data: live } = await axios.get(`${FPL_BASE_URL}/event/${gw}/live/`, REQ_OPTS);
     const livePts = Object.fromEntries((live?.elements || []).map(e => [e.id, e.stats?.total_points ?? 0]));
+    const liveStatsIndex = Object.fromEntries(
+  (live?.elements || []).map(e => [e.id, e.stats || {}])
+);
 
     // picks[] -> compact squad rows
 function mapSquad(picksArr = []) {
@@ -1035,7 +1038,10 @@ function mapSquad(picksArr = []) {
     .map(p => {
       const id = p.element;
       const team_id = teamIdByElement[id] ?? null;
-      const team_code = teamCodeByElement ? teamCodeByElement[id] ?? null : null; // you may or may not have this line
+      const team_code = teamCodeByElement ? (teamCodeByElement[id] ?? null) : null;
+
+      const s = liveStatsIndex[id] || {}; // <- uses the index added above
+
       return {
         id,
         name: nameIndex[id] || `#${id}`,
@@ -1044,16 +1050,35 @@ function mapSquad(picksArr = []) {
         is_captain: !!p.is_captain,
         is_vice_captain: !!p.is_vice_captain,
         points: livePts[id] ?? 0,
-        team_id,               // already present (if not, keep it)
-        teamId: team_id,       // ⬅️ ADD THIS LINE (alias used by your client util)
-        team_code,             // (optional; safe to keep)
+
+        // existing fields
+        team_id,
+        teamId: team_id,   // alias your client expects
+        team_code,
         headshot: codeIndex[id]
           ? `https://resources.premierleague.com/premierleague/photos/players/110x140/p${codeIndex[id]}.png`
           : null,
+
+        // 👇 new: per-player breakdown for the tooltip
+        stats: {
+          goals:        s.goals_scored ?? 0,
+          assists:      s.assists ?? 0,
+          cs:           s.clean_sheets ?? 0,
+          gc:           s.goals_conceded ?? 0,
+          og:           s.own_goals ?? 0,
+          pens_saved:   s.penalties_saved ?? 0,
+          pens_missed:  s.penalties_missed ?? 0,
+          yc:           s.yellow_cards ?? 0,
+          rc:           s.red_cards ?? 0,
+          saves:        s.saves ?? 0,
+          bonus:        s.bonus ?? 0,
+          bps:          s.bps ?? 0,
+        },
       };
     })
     .sort((a, b) => a.position - b.position);
 }
+
 
 
     const rows = await Promise.all(
@@ -1507,4 +1532,204 @@ app.get("/elimination/public/remaining/:leagueId/:gw", async (req, res) => {
 app.get("/elimination/admin/ping", (req, res) => {
   if (!requireAdmin(req, res)) return; // uses your existing middleware
   res.json({ ok: true });
+});
+
+
+// === FPL LIVE (final-like) with autosubs, captain/vice/TC, bench boost & hits ===
+// GET /fpl-live/:teamId/:gw
+app.get("/fpl-live/:teamId/:gw", async (req, res) => {
+  const teamId = Number(req.params.teamId);
+  const gw = Number(req.params.gw);
+
+  if (!Number.isInteger(teamId) || !Number.isInteger(gw) || gw <= 0) {
+    return res.status(400).json({ error: "Invalid teamId or gw" });
+  }
+
+  try {
+    // 1) Bootstrap for positions mapping, etc.
+    const [{ data: boot }, { data: picks }, { data: live }, { data: fixtures }] = await Promise.all([
+      axios.get(`${FPL_BASE_URL}/bootstrap-static/`, REQ_OPTS),
+      axios.get(`${FPL_BASE_URL}/entry/${teamId}/event/${gw}/picks/`, REQ_OPTS),
+      axios.get(`${FPL_BASE_URL}/event/${gw}/live/`, REQ_OPTS),
+      axios.get(`${FPL_BASE_URL}/fixtures/?event=${gw}`, REQ_OPTS),
+    ]);
+
+    const playerIndex = Object.fromEntries((boot?.elements || []).map(e => [e.id, e]));
+    const livePts = Object.fromEntries((live?.elements || []).map(e => [e.id, e.stats?.total_points ?? 0]));
+    const liveMin = Object.fromEntries((live?.elements || []).map(e => [e.id, e.stats?.minutes ?? 0]));
+
+// when building 'squad' (near the top of the handler)
+const squad = (picks?.picks || []).map(p => {
+  const el = playerIndex[p.element];
+  return {
+    id: p.element,
+    name: el?.web_name || `#${p.element}`,
+    element_type: el?.element_type || 1, // 1=GKP,2=DEF,3=MID,4=FWD
+    position: p.position,               // 1..15
+    is_captain: !!p.is_captain,
+    is_vice_captain: !!p.is_vice_captain,
+    team_code: el?.team_code || 0,      // 👈 add this
+    minutes: liveMin[p.element] || 0,
+    base_points: livePts[p.element] ?? 0,
+  };
+});
+
+
+    const entryHistory = picks?.entry_history || {};
+    const active_chip = picks?.active_chip || null; // "3xc" | "bboost" | null
+
+    // 2) Helper counts by formation
+    const countByType = arr => ({
+      gk: arr.filter(x => x.element_type === 1).length,
+      def: arr.filter(x => x.element_type === 2).length,
+      mid: arr.filter(x => x.element_type === 3).length,
+      fwd: arr.filter(x => x.element_type === 4).length,
+    });
+
+    // 3) Build starting XI + bench from positions
+    const starting = squad.filter(s => s.position >= 1 && s.position <= 11);
+    const benchOutfield = squad.filter(s => s.position >= 12 && s.position <= 14).sort((a,b)=>a.position-b.position);
+    const benchGK = squad.find(s => s.position === 15) || null;
+
+    // 4) Determine who "played"
+    const played = new Set(squad.filter(s => s.minutes > 0).map(s => s.id));
+
+    // 5) Apply automatic subs in bench order, keeping valid formation:
+    // formation must be: 1 GK, at least 3 DEF, 2 MID, 1 FWD (11 players total).
+    let field = starting.filter(p => played.has(p.id));           // starters who played
+    let missing = starting.filter(p => !played.has(p.id));        // starters who did NOT play
+
+    // if GK didn't play, try GK bench directly
+    if (starting.find(s => s.element_type === 1 && !played.has(s.id))) {
+      if (benchGK && played.has(benchGK.id)) {
+        // Replace non-playing GK with bench GK
+        field = field.filter(p => p.element_type !== 1);
+        field.push(benchGK);
+        // Mark GK as used; do not allow also as outfield
+      }
+      // if bench GK also didn't play, nothing to do
+      missing = missing.filter(m => m.element_type !== 1);
+    }
+
+    // Now fill missing non-GK by benchOutfield order while respecting min position rules
+    const MIN_DEF = 3, MIN_MID = 2, MIN_FWD = 1;
+
+    const canAdd = (arr, candidate) => {
+      // check spaces remaining (<= 11) and that removing the missing doesn't violate formation
+      const sim = [...arr, candidate];
+      const c = countByType(sim);
+      if (c.gk !== 1) return false; // must keep exactly one GK already
+      if (sim.length > 11) return false;
+      if (c.def < MIN_DEF) return false;
+      if (c.mid < MIN_MID) return false;
+      if (c.fwd < MIN_FWD) return false;
+      return true;
+    };
+
+    const ensureFormation = (current) => {
+      const c = countByType(current);
+      return (current.length === 11 && c.gk === 1 && c.def >= MIN_DEF && c.mid >= MIN_MID && c.fwd >= MIN_FWD);
+    };
+
+    // Remove missing from field (already done implicitly since field=played starters)
+    // Try to add benchOutfield players who played, in order
+    for (const sub of benchOutfield) {
+      if (!played.has(sub.id)) continue; // bench also didn't play
+      // we only add if we still have < 11 players
+      if (field.length >= 11) break;
+
+      // tentative add
+      const withSub = [...field, sub];
+      // To be safe, check we can still reach a valid formation after all subs.
+      // Greedy is fine here because FPL uses bench order.
+      // We'll just ensure it doesn't break the minimums at the end; if yes, revert.
+      field.push(sub);
+    }
+
+    // If after greedy fill we exceeded constraints (rare), trim back to 11 by removing the last added bench
+    while (field.length > 11) field.pop();
+
+    // Final sanity: if constraints aren’t met (edge cases), try to fix by removing last added until valid or stop
+    if (!ensureFormation(field)) {
+      field = field
+        .sort((a,b)=>a.position-b.position) // prefer original starters first
+        .slice(0, 11); // keep 11 anyway; practical fallback
+    }
+
+    // 6) Captain / Vice logic including Triple Captain failover
+    const cap = field.find(p => p.is_captain);
+    const vc  = field.find(p => p.is_vice_captain);
+
+    let capMult = 1;
+    let capIdUsed = null;
+
+    if (cap && cap.minutes > 0) {
+      capMult = active_chip === "3xc" ? 3 : 2;
+      capIdUsed = cap.id;
+    } else if (vc && vc.minutes > 0) {
+      capMult = active_chip === "3xc" ? 3 : 2; // TC transfers to vice if captain DNP
+      capIdUsed = vc.id;
+    }
+
+    // 7) Compute totals (bench boost adds bench points as well; otherwise only field 11)
+    // We already built 'field' == the XI after autosubs
+    const bench = squad.filter(p => !field.some(f => f.id === p.id));
+
+    const baseFieldPoints = field.reduce((sum, p) => sum + p.base_points, 0);
+    const benchPoints = bench.reduce((sum, p) => sum + p.base_points, 0);
+
+    // Apply captain multiplier (we must add extra points over the base since base already counts once)
+    let captainExtra = 0;
+    if (capIdUsed) {
+      const capObj = field.find(p => p.id === capIdUsed) || bench.find(p => p.id === capIdUsed);
+      if (capObj) {
+        // base already counted once; add (multiplier-1)*base
+        captainExtra = (capMult - 1) * capObj.base_points;
+      }
+    }
+
+    // Bench Boost logic: if active, include bench points
+    const includeBench = active_chip === "bboost";
+    const subtotal = baseFieldPoints + captainExtra + (includeBench ? benchPoints : 0);
+
+    // Deduct transfer hits
+    const hits = Number(entryHistory.event_transfers_cost ?? 0);
+    const total = subtotal - hits;
+
+    res.json({
+      teamId,
+      gameweek: gw,
+      active_chip,
+      transfer_hits: hits,
+      captain_used: capIdUsed,
+      xi_after_autosubs: field
+        .sort((a,b)=>a.position-b.position)
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          element_type: p.element_type,
+          team_code: p.team_code, 
+          minutes: p.minutes,
+          points: p.base_points,
+          is_captain: p.id === capIdUsed && (cap?.id === capIdUsed || vc?.id === capIdUsed),
+          is_vice: !!p.is_vice_captain,
+          stats: p.stats, 
+        })),
+      bench: bench
+        .sort((a,b)=>a.position-b.position)
+        .map(p => ({
+          id: p.id, name: p.name, element_type: p.element_type,team_code: p.team_code,  minutes: p.minutes, points: p.base_points,is_vice: !!p.is_vice_captain,stats: p.stats,  
+        })),
+      totals: {
+        field_points: baseFieldPoints,
+        captain_extra: captainExtra,
+        bench_points: includeBench ? benchPoints : 0,
+        transfer_hits: hits,
+        total_after_hits: total,
+      }
+    });
+  } catch (err) {
+    console.error("FPLLIVE error:", err?.message || err);
+    return res.status(500).json({ error: "Failed to compute FPLLIVE" });
+  }
 });

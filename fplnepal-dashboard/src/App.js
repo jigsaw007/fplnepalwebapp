@@ -35,6 +35,7 @@ import LeagueStats from "./pages/LeagueStats";
 import MonthlyWinner from "./pages/MonthlyWinner";
 import Elimination from "./pages/Elimination";            // public
 import EliminationAdmin from "./pages/EliminationAdmin";  // admin
+import FPLLive from "./pages/FPLLive";
 
 
 
@@ -95,6 +96,7 @@ const AppInner = () => {
                  <Route path="/monthly-winner" element={<MonthlyWinner />} />
                  <Route path="/elimination" element={<Elimination />} />     
 <Route path="/elimination-admin" element={<EliminationAdmin />} /> 
+<Route path="/fpllive" element={<FPLLive />} />
 
 
 

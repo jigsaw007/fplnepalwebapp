@@ -177,6 +177,15 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
 )}
 
                 <NavLink
+                  to="/fpllive"
+                  className={({ isActive }) =>
+                    `${linkBase} ${isActive ? linkActive : linkInactive}`
+                  }
+                >
+                  <span>📈</span> <span>FPLLIVE</span>
+                </NavLink>
+
+                <NavLink
                   to="/league-stats"
                   className={({ isActive }) =>
                     `${linkBase} ${isActive ? linkActive : linkInactive}`
