@@ -112,7 +112,7 @@ export default function FPLLive() {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState(null);
   const [err, setErr] = useState("");
-  const [openId, setOpenId] = useState(null);       // <-- NEW: who is open
+  const [openId, setOpenId] = useState(null);     
 
   const gwOptions = useMemo(() => Array.from({ length: 38 }, (_, i) => `${i + 1}`), []);
 
@@ -208,7 +208,7 @@ export default function FPLLive() {
           <span className="font-medium"> bonus points</span>,
           <span className="font-medium"> automatic substitutions</span>,
           captain/vice logic (incl. TC), and
-          <span className="font-medium"> transfer hits</span> applied — like LiveFPL.
+          <span className="font-medium"> transfer hits</span> applied — before the Offical FPL gets update.
         </p>
       </div>
 

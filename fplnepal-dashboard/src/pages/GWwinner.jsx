@@ -230,9 +230,16 @@ const captainImg = (row) => shirtFromTeamCode(row?.captain_team_code);
                   </div>
 
                   {/* Names */}
-                  <div className={`text-xl md:text-2xl font-extrabold tracking-tight ${style.title}`}>
-                    {row.manager_name}
-                  </div>
+<a
+  href={`https://fantasy.premierleague.com/entry/${row.manager_id}/event/${gw}`}
+  target="_blank"
+  rel="noopener noreferrer"
+  className={`text-xl md:text-2xl font-extrabold tracking-tight ${style.title} hover:underline text-black`}
+>
+  {row.manager_name}
+</a>
+
+
                   <div className="text-sm text-gray-600">{row.team_name}</div>
 
                   {/* Score */}
@@ -351,7 +358,14 @@ const captainImg = (row) => shirtFromTeamCode(row?.captain_team_code);
                 <tr key={row.manager_id} className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}>
                   <td className="py-3 pl-5 pr-4 font-semibold">{row.league_rank}</td>
                   <td className="py-3 px-4">
-                    <div className="font-medium">{row.manager_name}</div>
+                    <a
+  href={`https://fantasy.premierleague.com/entry/${row.manager_id}/event/${gw}`}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="text-sm font-semibold text-black hover:underline"
+>
+  {row.manager_name}
+</a>
                   </td>
                   <td className="py-3 px-4 text-gray-700">{row.team_name}</td>
                   <td className="py-3 px-4 font-medium">{row.captain_name}</td>
