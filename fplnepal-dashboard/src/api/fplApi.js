@@ -380,3 +380,8 @@ export const fetchFplLive = async (teamId, gw) => {
   return res.json();
 };
 
+export async function fetchGwLive(gw) {
+  const url = `https://fantasy.premierleague.com/api/event/${gw}/live/`;
+  const res = await axios.get(url);
+  return res.data; // contains elements[{id, stats}]
+}

@@ -1,59 +1,39 @@
 // src/pages/FPLLive.jsx
-import { useMemo, useState } from "react";
-import { fetchFplLive } from "../api/fplApi";
+import { useEffect, useMemo, useState } from "react";
+import { fetchFplLive, fetchFPLData } from "../api/fplApi";
 
-// Shirt sprite from official FPL
+/* ---------- Image helpers ---------- */
 const shirtUrl = (team_code) =>
   `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${team_code}-66.png`;
+const headshotPrimaryByCode = (code) =>
+  code ? `https://resources.premierleague.com/premierleague25/photos/players/110x140/${code}.png` : null;
+const headshotLegacyByCode = (code) =>
+  code ? `https://resources.premierleague.com/premierleague/photos/players/250x250/p${code}.png` : null;
 
-/* -------------------- CHIP ICONS (SVG) -------------------^- */
-const ChipIcon = ({ chip, className = "" }) => {
-  if (!chip) return null;
-  const base = "inline-flex items-center justify-center rounded border shadow-sm " + className;
-  const common = "w-5 h-5";
-  switch (chip) {
-    case "wc":
-      return (
-        <span className={`${base} bg-emerald-50 border-emerald-200 text-emerald-700 px-2 py-1 text-xs font-bold`}>
-          <svg viewBox="0 0 24 24" className={common} aria-hidden>
-            <path d="M4 6l4 4 4-4 4 4 4-4v12H4z" fill="currentColor"/>
-          </svg>
-          <span className="ml-1">WC</span>
-        </span>
-      );
-    case "fh":
-      return (
-        <span className={`${base} bg-sky-50 border-sky-200 text-sky-700 px-2 py-1 text-xs font-bold`}>
-          <svg viewBox="0 0 24 24" className={common} aria-hidden>
-            <path d="M3 12h18M12 3v18" stroke="currentColor" strokeWidth="2" fill="none" />
-          </svg>
-          <span className="ml-1">FH</span>
-        </span>
-      );
-    case "bboost":
-      return (
-        <span className={`${base} bg-amber-50 border-amber-200 text-amber-700 px-2 py-1 text-xs font-bold`}>
-          <svg viewBox="0 0 24 24" className={common} aria-hidden>
-            <path d="M4 17h16M4 12h16M7 7h10" stroke="currentColor" strokeWidth="2" fill="none" />
-          </svg>
-          <span className="ml-1">BB</span>
-        </span>
-      );
-    case "3xc":
-      return (
-        <span className={`${base} bg-fuchsia-50 border-fuchsia-200 text-fuchsia-700 px-2 py-1 text-xs font-bold`}>
-          <svg viewBox="0 0 24 24" className={common} aria-hidden>
-            <path d="M12 3l3 6 6 .9-4.5 4.2 1.1 6.4L12 17l-5.6 3.5 1.1-6.4L3 9.9 9 9z" fill="currentColor" />
-          </svg>
-          <span className="ml-1">TC</span>
-        </span>
-      );
-    default:
-      return null;
-  }
-};
+/* ---------- Stat normalization ---------- */
+function normalizeStats(s) {
+  if (!s) return {};
+  return {
+    // attacking
+    goals:       s.goals_scored ?? 0,
+    assists:     s.assists ?? 0,
+    bonus:       s.bonus ?? 0,
+    bps:         s.bps ?? 0,
+    // defensive
+    cs:          s.clean_sheets ?? 0,
+    gc:          s.goals_conceded ?? 0,
+    saves:       s.saves ?? 0,
+    // discipline
+    yc:          s.yellow_cards ?? 0,
+    rc:          s.red_cards ?? 0,
+    og:          s.own_goals ?? 0,
+    // penalties
+    pens_saved:  s.penalties_saved ?? 0,
+    pens_missed: s.penalties_missed ?? 0,
+  };
+}
 
-/* -------------------- SECTION TITLE -------------------- */
+/* ---------- Small UI bits ---------- */
 const SectionTitle = ({ children }) => (
   <div className="flex items-center gap-3 mb-3">
     <h2 className="text-base md:text-lg font-semibold tracking-wide">{children}</h2>
@@ -61,66 +41,51 @@ const SectionTitle = ({ children }) => (
   </div>
 );
 
-/* -------------------- CLICK TOOLTIP -------------------- */
-const RowStat = ({ label, value }) =>
-  value ? (
-    <div className="flex justify-between text-xs">
-      <span className="text-gray-600">{label}</span>
-      <span className="font-mono ml-3">{value}</span>
-    </div>
-  ) : null;
-
-const PlayerTooltipCard = ({ stats, onClose }) => {
-  if (!stats) return null;
-  const {
-    goals, assists, bonus, cs, gc, saves,
-    pens_saved, pens_missed, yc, rc, og, bps,
-  } = stats || {};
-  return (
-    <div className="relative w-48 rounded-lg border bg-white shadow-lg p-2">
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute -right-1 -top-1 text-[10px] bg-gray-200 hover:bg-gray-300 rounded-full w-5 h-5 flex items-center justify-center"
-        aria-label="Close"
-      >
-        ×
-      </button>
-      <div className="text-[10px] uppercase tracking-wide text-gray-500 mb-1">Stats</div>
-      <div className="space-y-0.5">
-        <RowStat label="Goals" value={goals} />
-        <RowStat label="Assists" value={assists} />
-        <RowStat label="Bonus" value={bonus} />
-        <RowStat label="Clean Sheets" value={cs} />
-        <RowStat label="Goals Conceded" value={gc} />
-        <RowStat label="Saves" value={saves} />
-        <RowStat label="Pens Saved" value={pens_saved} />
-        <RowStat label="Pens Missed" value={pens_missed} />
-        <RowStat label="Yellow Cards" value={yc} />
-        <RowStat label="Red Cards" value={rc} />
-        <RowStat label="Own Goals" value={og} />
-        <RowStat label="BPS" value={bps} />
-      </div>
-      <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-2 h-2 rotate-45 bg-white border-l border-t" />
-    </div>
+const ChipPill = ({ chip }) => {
+  if (!chip) return null;
+  const pill = (cls, label) => (
+    <span className={`inline-flex items-center px-2 py-1 text-xs font-bold rounded border shadow-sm ${cls}`}>{label}</span>
   );
+  switch (chip) {
+    case "wildcard":
+    case "wc": return pill("bg-emerald-50 text-emerald-700 border-emerald-200", "WC");
+    case "freehit":
+    case "fh": return pill("bg-sky-50 text-sky-700 border-sky-200", "FH");
+    case "bboost": return pill("bg-amber-50 text-amber-700 border-amber-200", "BB");
+    case "3xc": return pill("bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200", "TC");
+    default: return null;
+  }
 };
 
 export default function FPLLive() {
   const [teamId, setTeamId] = useState("");
   const [gw, setGw] = useState("1");
   const [loading, setLoading] = useState(false);
-  const [data, setData] = useState(null);
   const [err, setErr] = useState("");
-  const [openId, setOpenId] = useState(null);     
+  const [data, setData] = useState(null);
+
+  // bootstrap-static mapping for headshots
+  const [elMap, setElMap] = useState(new Map());
+  const [hoveredId, setHoveredId] = useState(null);
 
   const gwOptions = useMemo(() => Array.from({ length: 38 }, (_, i) => `${i + 1}`), []);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const bs = await fetchFPLData();
+        const map = new Map();
+        (bs?.elements || []).forEach((e) => map.set(e.id, { name: e.web_name, code: e.code }));
+        setElMap(map);
+      } catch {
+        setElMap(new Map());
+      }
+    })();
+  }, []);
+
   const onSubmit = async (e) => {
     e.preventDefault();
-    setErr("");
-    setData(null);
-    setOpenId(null);
+    setErr(""); setData(null);
     if (!teamId || !gw) {
       setErr("Please enter both Team ID and Gameweek.");
       return;
@@ -128,9 +93,14 @@ export default function FPLLive() {
     try {
       setLoading(true);
       const res = await fetchFplLive(teamId.trim(), Number(gw));
-      setData(res);
-    } catch (e) {
-      setErr(e.message || "Failed to load");
+      const patch = (arr = []) => arr.map(p => ({ ...p, stats: normalizeStats(p.stats) }));
+      setData({
+        ...res,
+        xi_after_autosubs: patch(res.xi_after_autosubs),
+        bench: patch(res.bench),
+      });
+    } catch (e2) {
+      setErr(e2?.message || "Failed to load");
     } finally {
       setLoading(false);
     }
@@ -145,50 +115,134 @@ export default function FPLLive() {
     return { gk, def, mid, fwd };
   }, [data]);
 
-  const PlayerCard = ({ p }) => {
-    const isOpen = openId === p.id;
+  /* ---------- Aggregation for Breakdown ---------- */
+  const squadAll = useMemo(() => {
+    if (!data) return [];
+    return [ ...(data.xi_after_autosubs || []), ...(data.bench || []) ];
+  }, [data]);
+
+  const BREAKDOWN_FIELDS = [
+    { id: "goals",       label: "Total Goals Scored" },
+    { id: "assists",     label: "Assists" },
+    { id: "cs",          label: "Clean Sheets" },
+    { id: "gc",          label: "Total Goals Conceded" },
+    { id: "yc",          label: "Yellow Cards" },
+    { id: "rc",          label: "Red Cards" },
+    { id: "og",          label: "Own Goals" },
+    { id: "saves",       label: "Saves" },
+    { id: "bonus",       label: "Bonus" },
+    { id: "bps",         label: "BPS" },
+    { id: "pens_saved",  label: "Penalties Saved" },
+    { id: "pens_missed", label: "Penalties Missed" },
+  ];
+
+  const breakdownRows = useMemo(() => {
+    const out = [];
+    for (const { id, label } of BREAKDOWN_FIELDS) {
+      let total = 0;
+      const contributors = [];
+      for (const p of squadAll) {
+        const val = Number(p?.stats?.[id] ?? 0);
+        if (val > 0) contributors.push({ name: p.name ?? p.web_name ?? `#${p.id}`, value: val });
+        total += val;
+      }
+      contributors.sort((a, b) => (b.value - a.value) || a.name.localeCompare(b.name));
+      out.push({ id, label, total, contributors });
+    }
+    return out;
+  }, [squadAll]);
+
+  /* ---------- Player Cards / Pitch ---------- */
+  const PlayerAvatar = ({ p }) => {
+    const code = elMap.get(p.id)?.code;
+    const primary = headshotPrimaryByCode(code);
+    const legacy  = headshotLegacyByCode(code);
+
     return (
-      <div className="relative flex flex-col items-center text-center">
-        <button
-          type="button"
-          onClick={() => setOpenId(isOpen ? null : p.id)}
-          className="relative outline-none"
-        >
-          {/* Kit */}
+      <div
+        className="relative w-[72px] h-[86px] md:w-[84px] md:h-[100px] rounded-md overflow-hidden bg-slate-100 group"
+        onMouseEnter={() => setHoveredId(p.id)}
+        onMouseLeave={() => setHoveredId((id) => (id === p.id ? null : id))}
+      >
+        {primary ? (
+          <img
+            src={primary}
+            alt={p.name}
+            className="w-full h-full object-cover transition-transform duration-200 group-hover:scale-[1.08]"
+            loading="lazy"
+            onError={(e) => {
+              if (legacy && e.currentTarget.src !== legacy) {
+                e.currentTarget.src = legacy;
+              } else {
+                e.currentTarget.src = shirtUrl(p.team_code);
+                e.currentTarget.className =
+                  "w-full h-full object-contain p-1 bg-white transition-transform duration-200 group-hover:scale-[1.08]";
+              }
+            }}
+          />
+        ) : (
           <img
             src={shirtUrl(p.team_code)}
             alt="kit"
-            className="w-16 h-16 md:w-20 md:h-20 object-contain drop-shadow"
-            onError={(e) => { e.currentTarget.style.opacity = 0.6; }}
+            className="w-full h-full object-contain p-1 bg-white transition-transform duration-200 group-hover:scale-[1.08]"
           />
-          {/* C / V badges */}
-          {p.is_captain && (
-            <span className="absolute -right-1 -top-1 text-[10px] md:text-xs font-bold bg-yellow-300 rounded-full px-1.5 py-0.5 border border-yellow-600 shadow">
-              C
-            </span>
-          )}
-          {p.is_vice && !p.is_captain && (
-            <span className="absolute -right-1 -top-1 text-[10px] md:text-xs font-bold bg-blue-200 rounded-full px-1.5 py-0.5 border border-blue-500 shadow">
-              V
-            </span>
-          )}
-        </button>
+        )}
 
-        {/* Name & points */}
-        <div className="mt-1 text-xs md:text-sm leading-tight max-w-[120px] truncate">
-          {p.name}
-        </div>
-        <div className="mt-0.5 text-sm md:text-base font-mono">{p.points}</div>
-
-        {/* Click tooltip */}
-        {isOpen && p.stats && (
-          <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50">
-            <PlayerTooltipCard stats={p.stats} onClose={() => setOpenId(null)} />
+        {/* Hover zoom preview */}
+        {hoveredId === p.id && (
+          <div className="hidden md:block absolute left-1/2 -translate-x-1/2 -top-2 -translate-y-full z-50">
+            <div className="rounded-lg overflow-hidden shadow-2xl ring-1 ring-black/10 bg-white">
+              <div className="w-28 h-36 bg-slate-50">
+                <img
+                  src={primary || shirtUrl(p.team_code)}
+                  alt={p.name}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    const fallback = legacy || shirtUrl(p.team_code);
+                    if (e.currentTarget.src !== fallback) e.currentTarget.src = fallback;
+                  }}
+                />
+              </div>
+              <div className="p-2 text-center text-xs">
+                <div className="font-semibold">{p.name}</div>
+                <div className="text-gray-600">GW pts: <span className="font-mono">{p.points}</span></div>
+              </div>
+            </div>
           </div>
         )}
       </div>
     );
   };
+
+  // name + points on separate backgrounds (to match your design)
+  const PlayerCard = ({ p }) => (
+    <div className="relative flex flex-col items-center text-center">
+      <div className="relative">
+        <PlayerAvatar p={p} />
+
+        {/* C / V badges */}
+        {p.is_captain && (
+          <span className="absolute -right-1 -top-1 text-[10px] md:text-xs font-bold bg-yellow-300 rounded-full px-1.5 py-0.5 border border-yellow-600 shadow">
+            C
+          </span>
+        )}
+        {!p.is_captain && p.is_vice && (
+          <span className="absolute -right-1 -top-1 text-[10px] md:text-xs font-bold bg-blue-200 rounded-full px-1.5 py-0.5 border border-blue-500 shadow">
+            V
+          </span>
+        )}
+      </div>
+
+      <div className="mt-1 w-[92px] md:w-[110px] rounded-md overflow-hidden shadow ring-1 ring-purple-900/10">
+        <div className="bg-white/95 text-[11px] md:text-xs font-semibold text-gray-800 truncate px-2 pt-1">
+          {p.name}
+        </div>
+        <div className="bg-[#3b1e63] text-white text-[11px] md:text-xs font-bold px-2 py-0.5">
+          {p.points}
+        </div>
+      </div>
+    </div>
+  );
 
   const PitchRow = ({ players }) => (
     <div className="flex justify-center gap-4 md:gap-6">
@@ -197,22 +251,16 @@ export default function FPLLive() {
   );
 
   return (
-    <div className="max-w-5xl mx-auto">
-      {/* Hero */}
+    <div className="max-w-6xl mx-auto">
+      {/* Header */}
       <div className="mb-4">
-        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
-          FPL LIVE – Check GW score before Official FPL Update
-        </h1>
+        <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">FPL LIVE</h1>
         <p className="text-sm md:text-base text-gray-600 mt-1">
-          Enter your Team ID to instantly see your Gameweek total with
-          <span className="font-medium"> bonus points</span>,
-          <span className="font-medium"> automatic substitutions</span>,
-          captain/vice logic (incl. TC), and
-          <span className="font-medium"> transfer hits</span> applied — before the Offical FPL gets update.
+          Enter your Team ID to see live Gameweek total (bonus, autosubs, captain logic, hits).
         </p>
       </div>
 
-      {/* Controls */}
+      {/* Form */}
       <form
         onSubmit={onSubmit}
         className="bg-white border rounded-2xl shadow-sm p-4 md:p-5 mb-6 flex flex-col md:flex-row gap-3"
@@ -228,11 +276,7 @@ export default function FPLLive() {
           value={gw}
           onChange={(e) => setGw(e.target.value)}
         >
-          {gwOptions.map((o) => (
-            <option key={o} value={o}>
-              GW {o}
-            </option>
-          ))}
+          {gwOptions.map((o) => <option key={o} value={o}>GW {o}</option>)}
         </select>
         <button
           type="submit"
@@ -244,94 +288,83 @@ export default function FPLLive() {
       </form>
 
       {err && <div className="text-red-600 mb-4">{err}</div>}
+      {loading && <div className="mt-4 text-gray-600">Calculating…</div>}
 
       {data && (
         <div className="space-y-6">
-          {/* Overview */}
-          <div className="bg-white border rounded-2xl shadow-sm p-4 md:p-5">
-            <div className="flex flex-wrap items-end gap-3">
-              <div>
-                <div className="text-xs uppercase tracking-wide text-gray-500">Gameweek</div>
-                <div className="text-xl font-bold">GW {data.gameweek}</div>
+          {/* ===== GW SCORE HERO (own bg) ===== */}
+          <div className="rounded-3xl p-6 md:p-8 shadow-sm border bg-gradient-to-br from-indigo-50 via-sky-50 to-indigo-100">
+            <div className="flex flex-col items-center gap-2">
+              <div className="text-xs uppercase tracking-wide text-gray-600">Gameweek</div>
+              <div className="text-xl font-bold">GW {data.gameweek}</div>
+
+              <div className="mt-2 rounded-2xl px-6 py-4 text-center shadow-inner bg-gradient-to-b from-cyan-400 to-blue-600 text-white">
+                <div className="text-xs opacity-90">Total Points</div>
+                <div className="text-5xl md:text-6xl font-black leading-none">{data.totals.total_after_hits}</div>
+                <div className="mt-2"><ChipPill chip={data.active_chip} /></div>
               </div>
 
-              <div className="ml-auto flex items-center gap-2">
-                <ChipIcon chip={data.active_chip} />
-              </div>
-
-              <div className="ml-auto text-right">
-                <div className="text-xs uppercase tracking-wide text-gray-500">GW Total</div>
-                <div className="text-4xl md:text-5xl font-black leading-none">
-                  {data.totals.total_after_hits}
+              {/* Mini tiles */}
+              <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 w-full max-w-3xl">
+                <div className="bg-white/80 backdrop-blur rounded-xl p-3 ring-1 ring-gray-200 text-center">
+                  <div className="text-[11px] uppercase text-gray-500">Field</div>
+                  <div className="text-2xl font-bold">{data.totals.field_points}</div>
+                </div>
+                <div className="bg-white/80 backdrop-blur rounded-xl p-3 ring-1 ring-gray-200 text-center">
+                  <div className="text-[11px] uppercase text-gray-500">Captain</div>
+                  <div className="text-2xl font-bold">{data.totals.captain_extra}</div>
+                </div>
+                <div className="bg-white/80 backdrop-blur rounded-xl p-3 ring-1 ring-gray-200 text-center">
+                  <div className="text-[11px] uppercase text-gray-500">Bench</div>
+                  <div className="text-2xl font-bold">
+                    {data.active_chip === "bboost" ? data.totals.bench_points : 0}
+                  </div>
+                </div>
+                <div className="bg-white/80 backdrop-blur rounded-xl p-3 ring-1 ring-gray-200 text-center">
+                  <div className="text-[11px] uppercase text-gray-500">Hits</div>
+                  <div className="text-2xl font-bold">-{data.totals.transfer_hits}</div>
                 </div>
               </div>
             </div>
+          </div>
 
-            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-              <div>
-                Transfer Hits: <span className="font-mono">-{data.transfer_hits}</span>
+          {/* ===== FORMATION ===== */}
+          <div className="rounded-3xl shadow-sm border p-4 md:p-6">
+            <div className="max-w-3xl mx-auto">
+              {/* stylized pitch */}
+              <div className="rounded-2xl p-4 md:p-6 bg-[linear-gradient(#56b36a_0,#3b9351_100%)]">
+                <div className="rounded-2xl p-4 md:p-6 ring-1 ring-emerald-300 bg-[radial-gradient(circle_at_50%_10%,rgba(255,255,255,.8),rgba(255,255,255,.55)_38%,transparent_40%)] space-y-5 md:space-y-7">
+                  <PitchRow players={rows?.gk || []} />
+                  <PitchRow players={rows?.def || []} />
+                  <PitchRow players={rows?.mid || []} />
+                  <PitchRow players={rows?.fwd || []} />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Formation */}
-          <div className="bg-white border rounded-2xl shadow-sm p-4 md:p-6">
-            <SectionTitle>Formation</SectionTitle>
-            <div className="space-y-4 md:space-y-6">
-              <PitchRow players={rows?.gk || []} />
-              <PitchRow players={rows?.def || []} />
-              <PitchRow players={rows?.mid || []} />
-              <PitchRow players={rows?.fwd || []} />
-            </div>
-          </div>
-
-          {/* Breakdown */}
-          <div className="bg-white border rounded-2xl shadow-sm p-4 md:p-6">
-            <SectionTitle>Breakdown</SectionTitle>
-            <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm md:text-base">
-              <div className="text-gray-600">Field Points</div>
-              <div className="text-right font-mono">{data.totals.field_points}</div>
-
-              <div className="text-gray-600">Captain Extra</div>
-              <div className="text-right font-mono">{data.totals.captain_extra}</div>
-
-              {data.active_chip === "bboost" && (
-                <>
-                  <div className="text-gray-600">Bench Points</div>
-                  <div className="text-right font-mono">{data.totals.bench_points}</div>
-                </>
-              )}
-
-              <div className="text-gray-600">Transfer Hits</div>
-              <div className="text-right font-mono">-{data.totals.transfer_hits}</div>
-            </div>
-          </div>
-
-          {/* Bench */}
-          <div className="bg-white border rounded-2xl shadow-sm p-4 md:p-6">
-            <SectionTitle>Bench</SectionTitle>
-            <div className="flex flex-wrap gap-3 md:gap-4">
-              {data.bench.map((p) => (
-                <div key={p.id} className="relative flex items-center gap-3 border rounded-xl px-3 py-2 bg-white shadow-sm">
-                  <button
-                    type="button"
-                    onClick={() => setOpenId(openId === p.id ? null : p.id)}
-                    className="relative flex items-center gap-3 outline-none"
-                  >
-                    <img src={shirtUrl(p.team_code)} alt="kit" className="w-10 h-10 md:w-12 md:h-12" />
-                    <div className="text-sm md:text-base">{p.name}</div>
-                    <div className="ml-auto font-mono text-sm md:text-base">{p.points}</div>
-                  </button>
-
-                  {openId === p.id && p.stats && (
-                    <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-50">
-                      <PlayerTooltipCard stats={p.stats} onClose={() => setOpenId(null)} />
+          {/* ===== BENCH (centered, same width as pitch) ===== */}
+          <div className="rounded-3xl p-4 md:p-6 shadow-sm border bg-gradient-to-br from-slate-50 to-slate-100">
+            <div className="max-w-3xl mx-auto">
+              <SectionTitle>Substitutes</SectionTitle>
+              <div className="flex flex-wrap justify-center gap-3 md:gap-4">
+                {data.bench.map((p) => (
+                  <div key={p.id} className="relative flex items-center gap-3 border rounded-xl px-3 py-2 bg-white/90 backdrop-blur shadow-sm">
+                    <div><PlayerAvatar p={p} /></div>
+                    <div className="leading-tight">
+                      <div className="text-sm md:text-base font-semibold">{p.name}</div>
+                      <div className="text-xs text-gray-600">
+                        GW pts: <span className="font-mono font-semibold">{p.points}</span>
+                      </div>
                     </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
+
+          {/* ===== BREAKDOWN (inline) ===== */}
+
         </div>
       )}
     </div>
