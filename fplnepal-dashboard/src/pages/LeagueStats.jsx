@@ -147,8 +147,15 @@ export default function LeagueStats() {
 
   useEffect(() => { if (gw) load(); }, [gw]); // auto-load on GW change
 
-  const headshot = (code) =>
-    code ? `https://resources.premierleague.com/premierleague/photos/players/110x140/p${code}.png` : null;
+  // Preferred/new path; we’ll still use a fallback at the <img> level.
+  const headshotPrimary = (code) => {
+    if (!code) return null;
+    return `https://resources.premierleague.com/premierleague25/photos/players/110x140/${code}.png`;
+  };
+  const headshotLegacy = (code) => {
+    if (!code) return null;
+    return `https://resources.premierleague.com/premierleague/photos/players/250x250/p${code}.png`;
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
@@ -242,26 +249,28 @@ export default function LeagueStats() {
         />
       </div>
 
-{/* TOP 3 MOST-CAPTAINED */}
-{topCaptains.length > 0 && (
-  <div className="mt-10">
-    <div className="text-base font-semibold text-slate-700 mb-5">
-      Top Captain Picks (GW {gw})
-    </div>
-    <div className="grid gap-6 grid-cols-1 sm:grid-cols-3">
-      {topCaptains.map((p, idx) => (
-        <TopCaptainCard
-          key={p.id ?? idx}
-          rank={idx + 1}
-          name={p.name}
-          code={p.code}
-          count={p.count}
-          percent={p.percent}
-        />
-      ))}
-    </div>
-  </div>
-)}
+      {/* TOP 3 MOST-CAPTAINED */}
+      {topCaptains.length > 0 && (
+        <div className="mt-10">
+          <div className="text-base font-semibold text-slate-700 mb-5">
+            Top Captain Picks (GW {gw})
+          </div>
+          <div className="grid gap-6 grid-cols-1 sm:grid-cols-3">
+            {topCaptains.map((p, idx) => (
+              <TopCaptainCard
+                key={p.id ?? idx}
+                rank={idx + 1}
+                name={p.name}
+                code={p.code}
+                count={p.count}
+                percent={p.percent}
+                primaryImg={headshotPrimary(p.code)}
+                legacyImg={headshotLegacy(p.code)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       <p className="mt-6 text-xs text-slate-500">
         Counts reflect chip usage and captain picks in the selected Gameweek.
@@ -296,11 +305,8 @@ function ChipCard({ label, count, icon, bg, ring, text }) {
   );
 }
 
-function TopCaptainCard({ rank, name, code, count, percent }) {
-  const img = code
-    ? `https://resources.premierleague.com/premierleague/photos/players/250x250/p${code}.png`
-    : null;
-
+function TopCaptainCard({ rank, name, code, count, percent, primaryImg, legacyImg }) {
+  // Badge style
   const rankColors = [
     "bg-yellow-100 text-yellow-800 ring-yellow-200",
     "bg-slate-100 text-slate-700 ring-slate-200",
@@ -308,23 +314,33 @@ function TopCaptainCard({ rank, name, code, count, percent }) {
   ];
   const badgeStyle = rankColors[Math.min(rank - 1, 2)];
 
+  // Render
   return (
     <div className="rounded-2xl p-6 shadow-md bg-white ring-1 ring-slate-200 flex flex-col items-center text-center">
       {/* Rank Badge */}
-      <div
-        className={`px-3 py-1 text-sm font-semibold rounded-full ring-1 mb-3 ${badgeStyle}`}
-      >
+      <div className={`px-3 py-1 text-sm font-semibold rounded-full ring-1 mb-3 ${badgeStyle}`}>
         #{rank}
       </div>
 
       {/* Player Image */}
       <div className="w-[120px] h-[150px] overflow-hidden rounded-lg bg-slate-100 flex items-center justify-center mb-4">
-        {img ? (
+        {primaryImg ? (
           <img
-            src={img}
+            src={primaryImg}
             alt={name}
             className="w-full h-full object-cover"
             loading="lazy"
+            onError={(e) => {
+              // fallback to legacy path if the new one 404s
+              if (legacyImg && e.currentTarget.src !== legacyImg) {
+                e.currentTarget.src = legacyImg;
+              } else {
+                // final fallback: hide and show "No Image"
+                e.currentTarget.style.display = "none";
+                const parent = e.currentTarget.parentElement;
+                if (parent) parent.innerHTML = '<span class="text-slate-400 text-sm">No Image</span>';
+              }
+            }}
           />
         ) : (
           <span className="text-slate-400 text-sm">No Image</span>
