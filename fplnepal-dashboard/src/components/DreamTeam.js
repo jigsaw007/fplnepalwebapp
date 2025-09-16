@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { fetchDreamTeam, fetchFPLData } from "../api/fplApi";
-import { POSITIONS, TEAM_SHORT_NAMES, getTeamKit } from "../utils/teamData";
+ import { fetchDreamTeam, fetchFPLData } from "../api/fplApi";
+ import { POSITIONS, TEAM_SHORT_NAMES } from "../utils/teamData";
 import "./dreamteam.css";
 
 const DreamTeam = () => {
@@ -20,7 +20,7 @@ const DreamTeam = () => {
         setTeamsData(fplData.teams);
         const latestGW = fplData.events.find(e => e.is_current)?.id || 28;
         setCurrentGameweek(latestGW);
-        if (gameweek === null) setGameweek(latestGW); // ✅ Set gameweek only once
+        if (gameweek === null) setGameweek(latestGW);
       }
       setLoading(false);
     };
@@ -34,7 +34,7 @@ const DreamTeam = () => {
   }, [gameweek]);
 
   const fetchDreamTeamData = async (gw) => {
-    if (gw === null) return; // ✅ Prevent invalid API calls
+    if (gw === null) return;
     setLoading(true);
     try {
       const data = await fetchDreamTeam(gw);
@@ -47,10 +47,10 @@ const DreamTeam = () => {
 
   const changeGameweek = (direction) => {
     setGameweek((prev) => {
-      if (prev === null) return prev; // ✅ Prevent invalid changes before GW is set
+      if (prev === null) return prev;
       let newGW = prev + direction;
       if (newGW < 1) newGW = 1;
-      if (newGW > currentGameweek) newGW = currentGameweek; // ✅ Prevent going beyond latest GW
+      if (newGW > currentGameweek) newGW = currentGameweek;
       return newGW;
     });
   };
@@ -59,9 +59,8 @@ const DreamTeam = () => {
     return playersData.find((player) => player.id === playerId) || {};
   };
 
-  const getTeamId = (teamIndex) => {
-    const team = teamsData.find((t) => t.id === teamIndex);
-    return team ? team.id : null;
+  const getTeamObjById = (teamIndex) => {
+    return teamsData.find((t) => t.id === teamIndex) || null;
   };
 
   if (gameweek === null) {
@@ -103,7 +102,7 @@ const DreamTeam = () => {
           </thead>
           <tbody>
             {dreamTeam.length > 0
-              ? dreamTeam.map((player) => renderPlayerRow(player, getPlayerDetails, getTeamId))
+              ? dreamTeam.map((player) => renderPlayerRow(player, getPlayerDetails, getTeamObjById))
               : <tr><td colSpan="5" className="text-center">N/A</td></tr>}
           </tbody>
         </table>
@@ -112,17 +111,33 @@ const DreamTeam = () => {
   );
 };
 
-const renderPlayerRow = (player, getPlayerDetails, getTeamId) => {
+/** Build a reliable kit URL from team_code; fallback to club badge if needed */
+const shirtFromTeamCode = (teamCode) =>
+  teamCode ? `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}-66.png` : null;
+
+const badgeFromTeamCode = (teamCode) =>
+  teamCode ? `https://resources.premierleague.com/premierleague/badges/70/t${teamCode}.png` : null;
+
+const renderPlayerRow = (player, getPlayerDetails, getTeamObjById) => {
   const playerDetails = getPlayerDetails(player.element);
-  const teamId = getTeamId(playerDetails.team);
   const position = POSITIONS[playerDetails.element_type] || "Unknown";
-  const clubShortName = TEAM_SHORT_NAMES[teamId] || "N/A";
+
+  // Player’s team object (for name/short name) and codes (for images)
+  const teamObj = getTeamObjById(playerDetails.team);
+  const clubShortName = TEAM_SHORT_NAMES[teamObj?.id] || "N/A";
+  const teamCode = playerDetails.team_code || teamObj?.code || null;
+
+  const kitSrc = shirtFromTeamCode(teamCode) || badgeFromTeamCode(teamCode);
 
   return (
     <tr key={player.element}>
       <td>{position}</td>
       <td>
-        <img src={getTeamKit(teamId, position)} alt={`${playerDetails.web_name} Kit`} className="team-kit" />
+        {kitSrc ? (
+          <img src={kitSrc} alt={`${playerDetails.web_name} Kit`} className="team-kit" />
+        ) : (
+          <div className="team-kit team-kit--placeholder" title="No image">N/A</div>
+        )}
       </td>
       <td>{playerDetails.web_name || "Unknown"}</td>
       <td>{clubShortName}</td>
