@@ -1,15 +1,13 @@
 [build]
   base = "fplnepal-dashboard"
-  command = "npm install && npm run build"
-  publish = "build"
+  publish = "fplnepal-dashboard/build"
+  command = "npm run build"
 
-  [build.environment]
-  CI = "false" 
+[build.environment]
+  CI = "false"
 
 [dev]
-  command = "npm --prefix fplnepal-dashboard run start"
+  directory = "fplnepal-dashboard"
+  command = "npm start"
   targetPort = 3000
-
-[functions]
-  directory = "backend/functions"
-  node_bundler = "esbuild"
+  framework = "create-react-app"
