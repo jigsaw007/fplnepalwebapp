@@ -63,7 +63,7 @@ const TopTransfersOut = () => {
                   alt={team?.name || "Team"}
                   className="w-5 h-5"
                   onError={(e) => {
-                    // ✅ fallback to badge if kit not found
+                    // /✅ fallback to badge if kit not found
                     e.target.src = `https://resources.premierleague.com/premierleague/badges/t${team?.code}.png`;
                   }}
                 />
