@@ -21,9 +21,8 @@ export const POSITIONS = {
   };
   
   // ✅ Function to Get Team Kit URL (with `_1` for GKP)
-  export const getTeamKit = (teamId, position) => {
-    const kitId = TEAM_KIT_MAP[teamId] || teamId;
-    const kitSuffix = position === "GKP" ? "_1" : "";  // ✅ Append `_1` for goalkeepers
-    return `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${kitId}${kitSuffix}-110.png`;
-  };
-  
+export const getTeamKit = (teamId, position) => {
+  const kitId = TEAM_KIT_MAP[teamId] || teamId;
+  const kitSuffix = position === "GKP" ? "_1" : ""; // ✅ goalkeepers
+  return `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${kitId}${kitSuffix}-220.webp`;
+};
