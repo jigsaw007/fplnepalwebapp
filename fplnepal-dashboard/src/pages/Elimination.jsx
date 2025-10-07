@@ -77,110 +77,111 @@ function EliminatedRow({ gw, row, namesById, ensureName }) {
 
   useEffect(() => {
     if (!nameObj) ensureName(row.entry_id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [key]);
+  }, [key]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const mgr = nameObj?.manager_name?.trim();
   const team = nameObj?.team_name?.trim();
-  const primary =
-    mgr && team ? `${mgr} — ${team}` : (mgr || team || `Entry ${row.entry_id}`);
+  const primary = mgr && team ? `${mgr}` : (mgr || team || `Entry ${row.entry_id}`);
 
-  // Compute net = points - hits (hits is positive cost)
   const hasHits = typeof row.hits === "number";
   const net = hasHits ? (Number(row.gw_points || 0) - Number(row.hits || 0)) : row.gw_points;
 
-  return (
-    <li
-      key={`${gw}-${row.entry_id}`}
-      className="
-        group flex items-center justify-between gap-3
-        rounded-xl border border-slate-200/70 bg-white
-        px-3 py-2 shadow-sm hover:shadow-md transition
-      "
-    >
-      <div className="flex flex-col">
-        <span className="font-medium leading-tight">{primary}</span>
-        <span className="text-[11px] text-gray-500">ID: {row.entry_id}</span>
-      </div>
-
-      <div className="flex items-center gap-1.5">
-        <StatPill label="pts" value={row.gw_points} color="blue" />
-        {hasHits && <StatPill label="hits" value={row.hits} color="red" />}
-        <StatPill label="net" value={net} color="slate" />
-      </div>
-    </li>
-  );
-}
-
-function GWCard({ gw, dateLabel, eliminated, remainingCount, namesById, expectedElims, ensureName }) {
-  const stage = stageForGW(gw);
+  // Determine tone by performance
+  const netColor =
+    net >= 70 ? "text-green-700 bg-green-50 border-green-200" :
+    net >= 50 ? "text-emerald-700 bg-emerald-50 border-emerald-200" :
+    net >= 35 ? "text-yellow-700 bg-yellow-50 border-yellow-200" :
+    "text-rose-700 bg-rose-50 border-rose-200";
 
   return (
     <div
       className="
-        rounded-2xl p-4 md:p-5
-        bg-gradient-to-br from-white to-slate-50
-        border border-slate-200/70 shadow-lg ring-1 ring-black/5
-        hover:-translate-y-0.5 hover:shadow-xl transition
+        flex justify-between items-center
+        bg-white/90 backdrop-blur-sm
+        border border-slate-200 rounded-2xl p-3 md:p-4
+        shadow-sm hover:shadow-md transition-all duration-200
+        hover:-translate-y-0.5
       "
     >
-      {/* Header */}
-      <div className="mb-3">
-        <div
-          className="
-            flex flex-wrap items-center justify-between gap-2
-            rounded-xl px-3 py-2
-            bg-gradient-to-r from-indigo-600/10 to-purple-600/10
-            border border-indigo-200/50
-          "
-        >
-          <div className="flex items-center gap-2">
-            <h3 className="text-base md:text-lg font-semibold">GW {gw}</h3>
-            {dateLabel ? (
-              <span className="text-xs text-gray-600">{dateLabel}</span>
-            ) : null}
-            {stage && <Chip color="purple">{stage}</Chip>}
-            {typeof expectedElims === "number" && expectedElims > 0 && (
-              <Chip color="green">Expected: {expectedElims} out</Chip>
-            )}
-          </div>
+      <div>
+        <div className="font-semibold text-gray-800 text-sm md:text-base">{primary}</div>
+        <div className="text-[11px] text-gray-500">{team || "—"} • ID {row.entry_id}</div>
+      </div>
 
-          <div className="flex items-center gap-2">
-            <Chip color="green">Remaining: {remainingCount ?? "-"}</Chip>
+      <div className="flex items-center gap-2">
+        <div className="text-[11px] bg-blue-50 text-blue-700 px-2 py-1 rounded-full border border-blue-200 font-medium">
+          Pts {row.gw_points}
+        </div>
+        {hasHits && (
+          <div className="text-[11px] bg-rose-50 text-rose-700 px-2 py-1 rounded-full border border-rose-200 font-medium">
+            Hits {row.hits}
           </div>
+        )}
+        <div
+          className={`text-[12px] md:text-sm font-bold px-3 py-1.5 rounded-full border ${netColor}`}
+        >
+          Final Score {net}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+function GWCard({ gw, dateLabel, eliminated, remainingCount, namesById, expectedElims, ensureName }) {
+  const stage = stageForGW(gw);
+
+  const stageGradient =
+    stage === "Stage 1"
+      ? "from-indigo-100 to-blue-50"
+      : stage === "Stage 2"
+      ? "from-emerald-100 to-green-50"
+      : stage === "Stage 3"
+      ? "from-amber-100 to-yellow-50"
+      : "from-violet-100 to-pink-50";
+
+  return (
+    <div
+      className={`rounded-3xl p-5 md:p-6 border border-slate-200 shadow-md
+                  bg-gradient-to-br ${stageGradient} transition-all hover:shadow-xl`}
+    >
+      {/* Header */}
+      <div className="flex flex-wrap justify-between items-center mb-4">
+        <div className="flex items-center gap-2">
+          <h3 className="text-lg md:text-xl font-bold text-gray-800">GW {gw}</h3>
+          {dateLabel && <span className="text-xs text-gray-600">{dateLabel}</span>}
+          {stage && (
+            <span className="bg-slate-900 text-white text-[11px] px-2.5 py-0.5 rounded-full">
+              {stage}
+            </span>
+          )}
+        </div>
+        <div className="flex gap-2">
+          {typeof expectedElims === "number" && expectedElims > 0 && (
+            <Chip color="green">{expectedElims} expected out</Chip>
+          )}
+          <Chip color="blue">Remaining {remainingCount ?? "-"}</Chip>
         </div>
       </div>
 
       {/* Body */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="text-sm font-medium">Eliminated this GW</div>
+      {eliminated.length === 0 ? (
+        <div className="text-center py-8 border-2 border-dashed border-gray-300 bg-white/40 rounded-2xl text-gray-500">
+          No eliminations this week 🎉
         </div>
-
-        {eliminated.length === 0 ? (
-          <div
-            className="
-              rounded-xl border-2 border-dashed border-slate-200
-              bg-white/60 text-sm text-gray-500 px-3 py-6
-              text-center
-            "
-          >
-            None
-          </div>
-        ) : (
-          <ul className="space-y-1.5">
-            {eliminated.map((r) => (
-              <EliminatedRow
-                key={`${gw}-${r.entry_id}`}
-                gw={gw}
-                row={r}
-                namesById={namesById}
-                ensureName={ensureName}
-              />
-            ))}
-          </ul>
-        )}
-      </div>
+      ) : (
+        <div className="space-y-3">
+          {eliminated.map((r) => (
+            <EliminatedRow
+              key={`${gw}-${r.entry_id}`}
+              gw={gw}
+              row={r}
+              namesById={namesById}
+              ensureName={ensureName}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
