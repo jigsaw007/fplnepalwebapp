@@ -1,23 +1,22 @@
 import { useEffect, useState } from "react";
-import { fetchInjuryNews } from "../api/fplApi"; // Fetch injuries & suspensions API
+import { fetchInjuryNews } from "../api/fplApi"; 
 import { 
   FaUserInjured, FaBandAid, FaPlane, FaMoneyBillWave, FaBan, 
   FaQuestionCircle, FaExclamationTriangle 
-} from "react-icons/fa"; // Import relevant icons
-import { TEAM_SHORT_NAMES, getTeamKit } from "../utils/teamData"; // ✅ Import team data
+} from "react-icons/fa";
 
 const InjuryNews = () => {
   const [news, setNews] = useState([]);
   const [currentPage, setCurrentPage] = useState(0);
   const [loading, setLoading] = useState(true);
-  const itemsPerPage = 3;
+  const itemsPerPage = 5; // ✅ Show 5 items per page
 
   useEffect(() => {
     const getInjuryNews = async () => {
       setLoading(true);
       const data = await fetchInjuryNews();
       if (data) {
-        const shuffledNews = data.sort(() => Math.random() - 0.5); // ✅ Shuffle the data
+        const shuffledNews = data.sort(() => Math.random() - 0.5); // ✅ Shuffle the order
         setNews(shuffledNews);
       }
       setLoading(false);
@@ -25,75 +24,86 @@ const InjuryNews = () => {
     getInjuryNews();
   }, []);
 
-  // ✅ Function to Determine Icon Based on News Type
+  // ✅ Get relevant icon based on news text
   const getNewsIcon = (newsText) => {
-    if (!newsText) return <FaExclamationTriangle className="text-yellow-500 text-lg" />; // Default Caution icon
+    if (!newsText) return <FaExclamationTriangle className="text-yellow-400 text-lg" />;
 
-    const lowerNews = newsText.toLowerCase();
-
-    if (lowerNews.includes("injury")) return <FaUserInjured className="text-red-600 text-lg" />;
-    if (lowerNews.includes("knock")) return <FaBandAid className="text-yellow-600 text-lg" />;
-    if (lowerNews.includes("loan")) return <FaPlane className="text-blue-500 text-lg" />;
-    if (lowerNews.includes("transfer")) return <FaMoneyBillWave className="text-green-500 text-lg" />;
-    if (lowerNews.includes("suspend")) return <FaBan className="text-red-700 text-lg" />;
-    if (lowerNews.includes("parent club")) return <FaBan className="text-gray-500 text-lg" />;
-    if (lowerNews.includes("unknown")) return <FaQuestionCircle className="text-gray-400 text-lg" />;
-    
-    return <FaExclamationTriangle className="text-yellow-500 text-lg" />; // Default caution icon
+    const lower = newsText.toLowerCase();
+    if (lower.includes("injury")) return <FaUserInjured className="text-red-600 text-lg" />;
+    if (lower.includes("knock")) return <FaBandAid className="text-yellow-500 text-lg" />;
+    if (lower.includes("loan")) return <FaPlane className="text-blue-500 text-lg" />;
+    if (lower.includes("transfer")) return <FaMoneyBillWave className="text-green-400 text-lg" />;
+    if (lower.includes("suspend")) return <FaBan className="text-red-700 text-lg" />;
+    if (lower.includes("parent club")) return <FaBan className="text-gray-500 text-lg" />;
+    if (lower.includes("unknown")) return <FaQuestionCircle className="text-gray-400 text-lg" />;
+    return <FaExclamationTriangle className="text-yellow-400 text-lg" />;
   };
 
-  // Pagination logic
+  // ✅ Pagination logic
   const startIndex = currentPage * itemsPerPage;
   const paginatedNews = news.slice(startIndex, startIndex + itemsPerPage);
   const totalPages = Math.ceil(news.length / itemsPerPage);
 
   return (
-    <div className="bg-purple-950 p-2 shadow-md rounded-lg text-sm text-white">
-      <h2 className="text-lg font-bold text-center mb-2">Injuries & Suspensions</h2>
+    <div className="bg-gradient-to-br from-purple-900 via-purple-950 to-fuchsia-950 p-4 rounded-2xl shadow-lg text-white text-sm">
+      <h2 className="text-base font-bold text-center mb-3 tracking-wide">
+        Injuries & Suspensions
+      </h2>
 
       {loading ? (
-        <div className="flex justify-center items-center py-4">
+        <div className="flex justify-center items-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-white"></div>
         </div>
       ) : (
         <>
-          {/* News Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {/* ✅ Player Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
             {paginatedNews.map((player) => {
-              const teamShortName = TEAM_SHORT_NAMES[player.team] || "N/A"; 
-              const kitUrl = getTeamKit(player.team, "MID"); 
-              const newsIcon = getNewsIcon(player.news); // ✅ Get the correct icon
+              const kitUrl = `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${player.team_code}-220.webp`;
+              const newsIcon = getNewsIcon(player.news);
 
               return (
-                <div key={player.id} className="bg-white text-black p-2 rounded-lg shadow flex flex-col items-center h-48">
-                  <img src={kitUrl} alt={teamShortName} className="w-16 h-16 mb-2" />
-                  <h3 className="text-sm font-bold">{player.web_name}</h3>
+                <div
+                  key={player.id}
+                  className="bg-white/10 hover:bg-white/20 rounded-xl shadow-md flex flex-col items-center text-center p-3 transition-all duration-200"
+                >
+                  {/* ✅ Team Kit */}
+                  <img
+                    src={kitUrl}
+                    alt={player.web_name}
+                    className="w-14 h-14 mb-2 object-contain"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = `https://resources.premierleague.com/premierleague/badges/t${player.team_code}.png`;
+                    }}
+                  />
 
-                  {/* ✅ Display Correct Icon Based on News Type */}
+                  {/* Player Info */}
+                  <h3 className="text-sm font-semibold mb-1">{player.web_name}</h3>
                   {newsIcon}
-
-                  <p className="text-center text-gray-700 text-xs overflow-hidden line-clamp-2">{player.news}</p>
+                  <p className="text-[11px] text-gray-300 mt-1 line-clamp-2 px-2">
+                    {player.news || "No update available"}
+                  </p>
                 </div>
               );
             })}
           </div>
 
-          {/* Pagination Buttons */}
-          <div className="flex justify-center mt-4 space-x-4">
+          {/* ✅ Pagination Buttons */}
+          <div className="flex justify-center mt-5 gap-3">
             <button
-              className="px-4 py-2 rounded bg-gray-400 text-white shadow-md disabled:opacity-50"
+              className="px-4 py-1.5 bg-gray-500/70 hover:bg-gray-500 text-white rounded-md text-xs font-semibold disabled:opacity-40"
               disabled={currentPage === 0}
               onClick={() => setCurrentPage((prev) => prev - 1)}
             >
-              Previous
+              ◀ Prev
             </button>
-
             <button
-              className="px-4 py-2 rounded bg-green-500 text-white shadow-md disabled:opacity-50"
+              className="px-4 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded-md text-xs font-semibold disabled:opacity-40"
               disabled={currentPage + 1 >= totalPages}
               onClick={() => setCurrentPage((prev) => prev + 1)}
             >
-              Next
+              Next ▶
             </button>
           </div>
         </>

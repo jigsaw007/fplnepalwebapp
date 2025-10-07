@@ -1733,3 +1733,25 @@ const squad = (picks?.picks || []).map(p => {
     return res.status(500).json({ error: "Failed to compute FPLLIVE" });
   }
 });
+
+// ✅ Fetch detailed Live Event Data (for goals, assists, cards, etc.)
+app.get("/event-live/:gw", async (req, res) => {
+  const { gw } = req.params;
+
+  if (!gw || isNaN(gw)) {
+    return res.status(400).json({ error: "Gameweek is required" });
+  }
+
+  try {
+    const response = await axios.get(
+      `https://fantasy.premierleague.com/api/event/${gw}/live/`,
+      { headers: { "User-Agent": "Mozilla/5.0" } }
+    );
+    res.json(response.data);
+  } catch (error) {
+    console.error(`Error fetching live data for GW${gw}:`, error.message);
+    res.status(500).json({ error: "Failed to fetch live event data" });
+  }
+});
+
+

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { fetchPriceChangePredictions } from "../api/fplApi";
+import { ChevronLeft, ChevronRight } from "lucide-react"; // ✅ Requires lucide-react
 
 const PriceChangePrediction = () => {
   const [risePlayers, setRisePlayers] = useState([]);
@@ -8,186 +9,176 @@ const PriceChangePrediction = () => {
   const [error, setError] = useState(null);
   const [risePage, setRisePage] = useState(1);
   const [dropPage, setDropPage] = useState(1);
-  const playersPerPage = 5; // Show top 5 players per page
+  const playersPerPage = 5;
 
   useEffect(() => {
-    const loadPriceChangePredictions = async () => {
+    const loadData = async () => {
       setLoading(true);
-      setError(null);
       try {
-        const predictedPlayers = await fetchPriceChangePredictions();
-        if (predictedPlayers && predictedPlayers.length > 0) {
-          // Separate Rise and Drop players
-          const rise = predictedPlayers.filter(player => player.predicted_change === "Rise");
-          const drop = predictedPlayers.filter(player => player.predicted_change === "Fall");
-
-          // Sort Rise players by change magnitude
-          const sortedRise = rise.sort((a, b) => {
-            const scoreA = a.transfers_in + (a.form * 10);
-            const scoreB = b.transfers_in + (b.form * 10);
-            return scoreB - scoreA; // Descending order
-          });
-
-          // Sort Drop players by change magnitude
-          const sortedDrop = drop.sort((a, b) => {
-            const scoreA = a.transfers_out + (5 - a.form) * 10;
-            const scoreB = b.transfers_out + (5 - b.form) * 10;
-            return scoreB - scoreA; // Descending order
-          });
-
-          setRisePlayers(sortedRise);
-          setDropPlayers(sortedDrop);
-        } else {
+        const data = await fetchPriceChangePredictions();
+        if (!data || data.length === 0) {
           setError("No price change predictions available");
+          setLoading(false);
+          return;
         }
+
+        const rise = data
+          .filter((p) => p.predicted_change === "Rise")
+          .sort((a, b) => b.transfers_in - a.transfers_in);
+        const drop = data
+          .filter((p) => p.predicted_change === "Fall")
+          .sort((a, b) => b.transfers_out - a.transfers_out);
+
+        setRisePlayers(rise);
+        setDropPlayers(drop);
       } catch (err) {
         setError("Failed to load price change predictions");
-        console.error("Error in PriceChangePrediction:", err);
+        console.error(err);
       } finally {
         setLoading(false);
       }
     };
-
-    loadPriceChangePredictions();
+    loadData();
   }, []);
 
-  // Pagination Logic for Rise Table
-  const indexOfLastRise = risePage * playersPerPage;
-  const indexOfFirstRise = indexOfLastRise - playersPerPage;
-  const currentRisePlayers = risePlayers.slice(indexOfFirstRise, indexOfLastRise);
-  const totalRisePages = Math.ceil(risePlayers.length / playersPerPage);
+  const paginate = (list, page) => {
+    const start = (page - 1) * playersPerPage;
+    return list.slice(start, start + playersPerPage);
+  };
 
-  // Pagination Logic for Drop Table
-  const indexOfLastDrop = dropPage * playersPerPage;
-  const indexOfFirstDrop = indexOfLastDrop - playersPerPage;
-  const currentDropPlayers = dropPlayers.slice(indexOfFirstDrop, indexOfLastDrop);
-  const totalDropPages = Math.ceil(dropPlayers.length / playersPerPage);
+  const risePages = Math.ceil(risePlayers.length / playersPerPage);
+  const dropPages = Math.ceil(dropPlayers.length / playersPerPage);
 
-  const paginateRise = (pageNumber) => setRisePage(pageNumber);
-  const paginateDrop = (pageNumber) => setDropPage(pageNumber);
+  const handleNext = (type) => {
+    if (type === "rise") {
+      setRisePage((prev) => (prev < risePages ? prev + 1 : 1));
+    } else {
+      setDropPage((prev) => (prev < dropPages ? prev + 1 : 1));
+    }
+  };
 
-  if (loading) {
+  const handlePrev = (type) => {
+    if (type === "rise") {
+      setRisePage((prev) => (prev > 1 ? prev - 1 : risePages));
+    } else {
+      setDropPage((prev) => (prev > 1 ? prev - 1 : dropPages));
+    }
+  };
+
+  if (loading)
     return (
-      <div className="flex justify-center items-center py-4">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-700"></div>
+      <div className="flex justify-center items-center py-10">
+        <div className="animate-spin h-8 w-8 border-2 border-t-transparent rounded-full border-white"></div>
       </div>
     );
-  }
 
-  if (error) {
+  if (error)
     return (
-      <div className="p-2 text-center text-red-500 text-xs">{error}</div>
+      <div className="text-center text-red-300 text-sm py-4">{error}</div>
     );
-  }
 
-  // Render Table Function (Reusable for both Rise and Drop)
-  const renderTable = (players, currentPlayers, totalPages, currentPage, paginate, title, titleColor) => (
-    <div className="w-full min-h-[300px] max-h-[300px] overflow-y-auto bg-white shadow-md rounded-lg">
-      <h3 className={`text-lg font-semibold ${titleColor} mb-2 text-center pt-2`}>{title}</h3>
-      {players.length > 0 ? (
-        <>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300 text-xs">
-              <thead className="bg-purple-950 text-white sticky top-0 z-10">
-                <tr>
-                  <th className="border p-1">Player</th>
-                  <th className="border p-1">Team</th>
-                  <th className="border p-1">Price (£)</th>
-                  <th className="border p-1">Change</th>
-                  <th className="border p-1">In</th>
-                  <th className="border p-1">Out</th>
-                  <th className="border p-1">Form</th>
-                  <th className="border p-1">P/G</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currentPlayers.map((player) => (
-                  <tr key={player.id} className="border hover:bg-purple-50">
-                    <td className="border p-1 text-center">{player.web_name}</td>
-                    <td className="border p-1 text-center">{player.team}</td>
-                    <td className="border p-1 text-center">{player.current_price.toFixed(1)}</td>
-                    <td className="border p-1 text-center">
-                      <span
-                        className={
-                          player.predicted_change === "Rise"
-                            ? "text-green-600 font-bold"
-                            : "text-red-600 font-bold"
-                        }
-                      >
-                        {player.predicted_change}
-                      </span>
-                    </td>
-                    <td className="border p-1 text-center">{player.transfers_in.toLocaleString()}</td>
-                    <td className="border p-1 text-center">{player.transfers_out.toLocaleString()}</td>
-                    <td className="border p-1 text-center">{player.form.toFixed(1)}</td>
-                    <td className="border p-1 text-center">{player.points_per_game.toFixed(1)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+  const renderCards = (
+    players,
+    title,
+    color,
+    page,
+    totalPages,
+    setPage,
+    type
+  ) => (
+    <div className="flex-1 flex flex-col bg-gradient-to-br from-purple-800 via-indigo-800 to-purple-900 rounded-2xl p-4 shadow-md text-white min-h-[350px]">
+      <div className="flex justify-between items-center mb-3">
+        <h3
+          className={`text-center text-sm font-semibold tracking-wide uppercase ${color}`}
+        >
+          {title}
+        </h3>
+
+        {/* Navigation */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => handlePrev(type)}
+            className="p-1 bg-white/20 hover:bg-white/40 rounded-md transition"
+          >
+            <ChevronLeft size={16} />
+          </button>
+          <button
+            onClick={() => handleNext(type)}
+            className="p-1 bg-white/20 hover:bg-white/40 rounded-md transition"
+          >
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/30 scrollbar-track-transparent">
+        {players.length === 0 ? (
+          <p className="text-center text-gray-200 text-xs">
+            No players predicted.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {paginate(players, page).map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center justify-between bg-white/10 hover:bg-white/20 rounded-xl px-3 py-2 transition-all duration-200"
+              >
+                <div className="flex flex-col">
+                  <span className="font-semibold text-sm">{p.web_name}</span>
+                  <span className="text-[10px] text-gray-200">{p.team}</span>
+                </div>
+
+                <div className="text-[11px] text-right leading-tight">
+                  <p className="text-gray-200">
+                    Price: £{p.current_price.toFixed(1)}
+                  </p>
+                  <p
+                    className={`font-bold ${
+                      p.predicted_change === "Rise"
+                        ? "text-green-400"
+                        : "text-red-400"
+                    }`}
+                  >
+                    {p.predicted_change}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex justify-center mt-2 pb-2">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((number) => (
-                <button
-                  key={number}
-                  onClick={() => paginate(number)}
-                  className={`mx-1 px-2 py-1 text-xs rounded ${
-                    currentPage === number
-                      ? "bg-purple-700 text-white"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
-                >
-                  {number}
-                </button>
-              ))}
-            </div>
-          )}
-        </>
-      ) : (
-        <p className="text-center text-gray-600 text-xs p-4">No players predicted for this category.</p>
-      )}
+        )}
+      </div>
     </div>
   );
 
   return (
-    <div className="p-4 bg-white shadow-md rounded-lg">
-      <h2 className="text-xl font-semibold text-gray-700 mb-2 text-center">
-        Price Change Predictions
-      </h2>
-      <p className="text-center mb-4 text-gray-600 text-xs">
-        Top players predicted to have price rises or falls based on transfers and form.
-      </p>
+    <div className="bg-gradient-to-r from-purple-600 via-indigo-600 to-fuchsia-600 text-white rounded-3xl p-5 shadow-lg h-full flex flex-col">
+      <div className="text-center mb-4">
+        <h2 className="text-lg font-bold">Price Change Predictions</h2>
+        <p className="text-xs text-white/80">
+          Predicted player price movements based on form and transfers.
+        </p>
+      </div>
 
-      {/* Flexbox Container for Side-by-Side Tables */}
-      <div className="flex flex-col md:flex-row gap-4">
-        {/* Rise Table */}
-        <div className="w-full md:w-1/2">
-          {renderTable(
-            risePlayers,
-            currentRisePlayers,
-            totalRisePages,
-            risePage,
-            paginateRise,
-            "Predicted Price Rises",
-            "text-green-600"
-          )}
-        </div>
-
-        {/* Drop Table */}
-        <div className="w-full md:w-1/2">
-          {renderTable(
-            dropPlayers,
-            currentDropPlayers,
-            totalDropPages,
-            dropPage,
-            paginateDrop,
-            "Predicted Price Drops",
-            "text-red-600"
-          )}
-        </div>
+      {/* Equal-height columns */}
+      <div className="flex flex-col md:flex-row gap-4 flex-1">
+        {renderCards(
+          risePlayers,
+          "Predicted Price Rises",
+          "text-green-300",
+          risePage,
+          risePages,
+          setRisePage,
+          "rise"
+        )}
+        {renderCards(
+          dropPlayers,
+          "Predicted Price Drops",
+          "text-red-300",
+          dropPage,
+          dropPages,
+          setDropPage,
+          "drop"
+        )}
       </div>
     </div>
   );
