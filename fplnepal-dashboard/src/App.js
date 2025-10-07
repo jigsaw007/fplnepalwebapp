@@ -7,12 +7,10 @@ import Dashboard from "./pages/Dashboard";
 import Players from "./pages/Players";
 import Compare from "./pages/Compare";
 import ClassicLeague from "./pages/ClassicLeague";
-// import HeadToHeadLeague from "./pages/HeadToHeadLeague";
 import DreamTeam from "./components/DreamTeam";
 import Suggestion from "./components/Suggestion";
 import Footer from "./components/Footer";
 import TieAnalyzer from "./components/TieAnalyzer";
-// import H2HTopScorer from "./components/h2htopscorer";
 import History from "./components/History";
 import Live from "./components/Live";
 import PriceChangePrediction from "./components/PriceChangePrediction";
@@ -33,15 +31,17 @@ import CaptainMode from "./pages/CaptainMode";
 import GWwinner from "./pages/GWwinner";
 import LeagueStats from "./pages/LeagueStats";
 import MonthlyWinner from "./pages/MonthlyWinner";
-import Elimination from "./pages/Elimination"; // public
-import EliminationAdmin from "./pages/EliminationAdmin"; // admin
+import Elimination from "./pages/Elimination";
+import EliminationAdmin from "./pages/EliminationAdmin";
 import FPLLive from "./pages/FPLLive";
 
 const AppInner = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Refresh ads on route change
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+  const toggleCollapse = () => setSidebarCollapsed(!sidebarCollapsed);
+
   const AdRefresh = () => {
     useEffect(() => {
       if (window.adsbygoogle) {
@@ -51,7 +51,6 @@ const AppInner = () => {
     return null;
   };
 
-  // Hide sidebar on any /worldcup route
   const { pathname } = useLocation();
   const hideSidebar = pathname.startsWith("/worldcup");
 
@@ -59,35 +58,42 @@ const AppInner = () => {
     <>
       <PageTrackingWrapper />
 
-      {/* ======= PAGE LAYOUT ======= */}
-      <div className="flex min-h-screen bg-gray-50">
-        {/* Sidebar (fixed on desktop, slide-in on mobile) */}
+      {/* ======= PAGE STRUCTURE ======= */}
+      <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+        {/* Sidebar */}
         {!hideSidebar && (
-          <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
+          <Sidebar
+            isOpen={sidebarOpen}
+            toggleSidebar={toggleSidebar}
+            collapsed={sidebarCollapsed}
+            toggleCollapse={toggleCollapse}
+          />
         )}
 
-        {/* Main Content Area */}
+        {/* Main Area */}
         <div
-          className={`flex-1 flex flex-col transition-all duration-300 ${
-            !hideSidebar ? "ml-72 md:ml-64" : "ml-0"
+          className={`flex-1 flex flex-col w-full transition-all duration-300 ${
+            hideSidebar
+              ? "ml-0"
+              : sidebarCollapsed
+              ? "md:ml-20"
+              : "md:ml-64"
           }`}
         >
           {/* Navbar */}
           <Navbar toggleSidebar={toggleSidebar} showMenu={!hideSidebar} />
 
-          {/* Main Scrollable Area */}
-          <main className="flex-1 p-6 overflow-x-hidden overflow-y-auto">
+          {/* Scrollable Content */}
+          <main className="flex-1 px-3 sm:px-6 py-4 overflow-x-hidden overflow-y-auto">
             <Routes>
-              {/* --- General Pages --- */}
+              {/* Main Pages */}
               <Route path="/" element={<Dashboard />} />
               <Route path="/players" element={<Players />} />
               <Route path="/compare" element={<Compare />} />
               <Route path="/classic-league" element={<ClassicLeague />} />
-              {/* <Route path="/headtohead-league" element={<HeadToHeadLeague />} /> */}
               <Route path="/dream-team" element={<DreamTeam />} />
               <Route path="/suggestion" element={<Suggestion />} />
               <Route path="/tieanalyzer" element={<TieAnalyzer />} />
-              {/* <Route path="/h2htopscorer" element={<H2HTopScorer />} /> */}
               <Route path="/history" element={<History />} />
               <Route path="/live" element={<Live />} />
               <Route
@@ -108,7 +114,7 @@ const AppInner = () => {
               <Route path="/elimination-admin" element={<EliminationAdmin />} />
               <Route path="/fpllive" element={<FPLLive />} />
 
-              {/* --- World Cup Pages (Sidebar Hidden) --- */}
+              {/* World Cup Pages (no sidebar) */}
               <Route path="/worldcup" element={<WorldCupLanding />} />
               <Route path="/worldcup/team/:id" element={<WorldCupTeamPage />} />
               <Route path="/worldcup/admin" element={<WorldCupAdmin />} />
@@ -122,17 +128,15 @@ const AppInner = () => {
               <Route path="/worldcup/results" element={<Results />} />
               <Route path="/worldcup/groups" element={<GroupsPage />} />
 
-              {/* --- Fallback Ad Refresh --- */}
+              {/* Fallback */}
               <Route path="*" element={<AdRefresh />} />
             </Routes>
 
-            {/* Ads Section Below Main Content */}
             <div className="mt-6">
               <AdComponent />
             </div>
           </main>
 
-          {/* Footer Always at Bottom */}
           <Footer />
         </div>
       </div>
@@ -140,14 +144,12 @@ const AppInner = () => {
   );
 };
 
-// Router wrapper so useLocation works
 const App = () => (
   <Router>
     <AppInner />
   </Router>
 );
 
-// Wrapper to ensure <Router> exists before usePageTracking()
 const PageTrackingWrapper = () => {
   usePageTracking();
   return null;
