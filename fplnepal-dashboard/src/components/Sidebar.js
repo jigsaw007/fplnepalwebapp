@@ -164,16 +164,6 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
               }>
                 <span>🧾</span> <span>Check Registration</span>
               </NavLink>
-              <NavLink
-  to="https://blog.fplnepal.com/"
-  target="_blank"
-  rel="noopener noreferrer"
-  className={({ isActive }) =>
-    `${linkBase} ${linkInactive}`
-  }
->
-  <span>📰</span> <span>Blog</span>
-</NavLink>
               
 
               <a
