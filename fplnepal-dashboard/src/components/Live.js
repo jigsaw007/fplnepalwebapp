@@ -1,136 +1,167 @@
 import { useEffect, useState } from "react";
-import { fetchFPLData, fetchFixturesByGameweek, fetchTeamsData } from "../api/fplApi";
+import { fetchFixturesByGameweek, fetchFPLData } from "../api/fplApi";
+import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
 const Live = () => {
-  const [gameweek, setGameweek] = useState(null);
   const [fixtures, setFixtures] = useState([]);
-  const [teams, setTeams] = useState({});
+  const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [currentGW, setCurrentGW] = useState(null);
+  const [activeGW, setActiveGW] = useState(null);
 
-  // Fetch Latest Gameweek Up to Today
+  // 🕒 Convert UTC → local time (auto detects browser timezone)
+  const formatLocalTime = (utcString) => {
+    if (!utcString) return "";
+    const date = new Date(utcString);
+    return date.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
   useEffect(() => {
-    const getLatestGameweek = async () => {
+    const getInitialData = async () => {
       setLoading(true);
-      const data = await fetchFPLData();
-      if (data) {
-        const today = new Date();
-        const latestGW = data.events
-          .filter(event => new Date(event.deadline_time) <= today)
-          .reduce((prev, curr) => (curr.id > prev.id ? curr : prev), { id: 1 });
+      const fplData = await fetchFPLData();
+      if (!fplData) return;
 
-        setGameweek(latestGW.id);
-      }
+      setTeams(fplData.teams);
+      const events = fplData.events;
+      const current = events.find((gw) => gw.is_current)?.id || 1;
+      setCurrentGW(current);
+      setActiveGW(current);
+
+      const fixtureData = await fetchFixturesByGameweek(current);
+      setFixtures(fixtureData || []);
       setLoading(false);
     };
-    getLatestGameweek();
+    getInitialData();
   }, []);
 
-  // Fetch Fixtures for the Selected Gameweek
-  useEffect(() => {
-    if (gameweek !== null) {
+  const getTeamName = (teamId) => {
+    const team = teams.find((t) => t.id === teamId);
+    return team ? team.name : "Unknown";
+  };
+
+  const getKitUrl = (teamCode) =>
+    `https://fantasy.premierleague.com/dist/img/shirts/standard/shirt_${teamCode}-220.webp`;
+
+  const handlePrev = async () => {
+    if (activeGW > 1) {
       setLoading(true);
-      const getGameweekData = async () => {
-        const data = await fetchFixturesByGameweek(gameweek);
-        setFixtures(data || []);
-        setLoading(false);
-      };
-      getGameweekData();
+      const fixtureData = await fetchFixturesByGameweek(activeGW - 1);
+      setFixtures(fixtureData || []);
+      setActiveGW(activeGW - 1);
+      setLoading(false);
     }
-  }, [gameweek]);
+  };
 
-  // Fetch Team Data
-  useEffect(() => {
-    setLoading(true);
-    const getTeams = async () => {
-      const data = await fetchTeamsData();
-      if (data.length > 0) {
-        const teamMap = data.reduce((acc, team) => {
-          acc[team.id] = {
-            name: team.name,
-            badge: team.badge,
-          };
-          return acc;
-        }, {});
-        setTeams(teamMap);
-      }
+  const handleNext = async () => {
+    if (activeGW < 38) {
+      setLoading(true);
+      const fixtureData = await fetchFixturesByGameweek(activeGW + 1);
+      setFixtures(fixtureData || []);
+      setActiveGW(activeGW + 1);
       setLoading(false);
-    };
-    getTeams();
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (gameweek) {
-        fetchFixturesByGameweek(gameweek).then(data => setFixtures(data || []));
-      }
-    }, 30000); // Refresh every 30 seconds
-  
-    return () => clearInterval(interval);
-  }, [gameweek]);
+    }
+  };
 
   return (
-    <div className="bg-white p-3 shadow-md rounded-lg">
-      <h2 className="text-sm font-bold text-center mb-2">Live Fixtures</h2>
+    <div className="bg-gradient-to-br from-purple-900 via-purple-950 to-fuchsia-950 p-3 rounded-2xl shadow-md text-white">
+      <div className="flex justify-between items-center mb-2 px-2">
+        <h2 className="text-sm font-bold">Live Fixtures</h2>
+
+        {/* GW Navigation */}
+        <div className="flex items-center gap-2">
+          <button
+            className={`p-1 rounded bg-white/10 hover:bg-white/20 ${
+              activeGW === 1 ? "opacity-40 cursor-not-allowed" : ""
+            }`}
+            disabled={activeGW === 1}
+            onClick={handlePrev}
+          >
+            <FaChevronLeft size={10} />
+          </button>
+          <span className="text-xs font-semibold">GW {activeGW}</span>
+          <button
+            className={`p-1 rounded bg-white/10 hover:bg-white/20 ${
+              activeGW === 38 ? "opacity-40 cursor-not-allowed" : ""
+            }`}
+            disabled={activeGW === 38}
+            onClick={handleNext}
+          >
+            <FaChevronRight size={10} />
+          </button>
+        </div>
+      </div>
 
       {loading ? (
-        <div className="flex justify-center items-center py-6">
-          <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-purple-700"></div>
+        <div className="flex justify-center items-center h-24">
+          <div className="animate-spin h-6 w-6 border-t-2 border-b-2 border-white rounded-full"></div>
         </div>
+      ) : fixtures.length === 0 ? (
+        <p className="text-center text-xs text-gray-300">No fixtures available.</p>
       ) : (
-        <>
-          {/* Navigation Buttons */}
-          <div className="flex justify-center space-x-2 mb-3">
-            <button
-              className="px-2 py-1 text-xs bg-purple-950 text-white rounded shadow-md hover:bg-blue-600 transition disabled:opacity-50"
-              disabled={gameweek === 1}
-              onClick={() => setGameweek(gameweek - 1)}
-            >
-              ◀ Prev
-            </button>
-            <span className="text-xs font-semibold bg-gray-200 px-2 py-1 rounded-md">
-              GW {gameweek}
-            </span>
-            <button
-              className="px-2 py-1 text-xs bg-purple-950 text-white rounded shadow-md hover:bg-blue-600 transition"
-              onClick={() => setGameweek(gameweek + 1)}
-            >
-              Next ▶
-            </button>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {fixtures.map((fixture) => {
+            const homeTeam = getTeamName(fixture.team_h);
+            const awayTeam = getTeamName(fixture.team_a);
 
-          {/* Fixtures Table */}
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs border-collapse border border-gray-300 rounded-md shadow-sm">
-              <thead className="bg-purple-950 text-white text-[10px]">
-                <tr>
-                  <th className="border border-gray-300 px-2 py-1">Home</th>
-                  <th className="border border-gray-300 px-2 py-1">Score</th>
-                  <th className="border border-gray-300 px-2 py-1">Away</th>
-                </tr>
-              </thead>
-              <tbody>
-                {fixtures.map((match, index) => (
-                  <tr key={index} className="border border-gray-300 odd:bg-gray-100 even:bg-gray-200 hover:bg-blue-200">
-<td className="px-2 py-1 text-center flex justify-center items-center gap-2">
-  <img src={teams[match.team_h]?.badge} alt="badge" className="w-4 h-4" />
-  <span className="whitespace-nowrap">{teams[match.team_h]?.name || "Unknown"}</span>
-</td>
-<td className="px-2 py-1 text-center font-semibold">
-  {match.team_h_score !== null && match.team_a_score !== null
-    ? `${match.team_h_score} - ${match.team_a_score}`
-    : "vs"}
-</td>
-<td className="px-2 py-1 flex items-center gap-2 text-center">
-  {teams[match.team_a]?.name || "Unknown"}
-  <img src={teams[match.team_a]?.badge} alt="badge" className="w-4 h-4" />
-</td>
+            const homeKit = getKitUrl(
+              teams.find((t) => t.id === fixture.team_h)?.code
+            );
+            const awayKit = getKitUrl(
+              teams.find((t) => t.id === fixture.team_a)?.code
+            );
 
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
+            const status = fixture.finished
+              ? "Full Time"
+              : fixture.started
+              ? "In Progress"
+              : "Upcoming";
+
+            return (
+              <div
+                key={fixture.id}
+                className="bg-white/10 rounded-xl p-2 text-xs flex flex-col items-center shadow-md hover:bg-white/20 transition"
+              >
+                <div className="flex items-center justify-between w-full mb-1">
+                  <div className="flex flex-col items-center w-1/3">
+                    <img src={homeKit} alt={homeTeam} className="w-8 h-8" />
+                    <p className="mt-0.5 text-[10px] text-center">{homeTeam}</p>
+                  </div>
+
+                  <div className="flex flex-col items-center justify-center w-1/3">
+                    <p className="font-bold text-sm">
+                      {fixture.team_h_score ?? "-"} : {fixture.team_a_score ?? "-"}
+                    </p>
+                    <span
+                      className={`text-[10px] px-1.5 py-[1px] rounded ${
+                        status === "Full Time"
+                          ? "bg-green-600"
+                          : status === "In Progress"
+                          ? "bg-yellow-400 text-black"
+                          : "bg-gray-500"
+                      }`}
+                    >
+                      {status}
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col items-center w-1/3">
+                    <img src={awayKit} alt={awayTeam} className="w-8 h-8" />
+                    <p className="mt-0.5 text-[10px] text-center">{awayTeam}</p>
+                  </div>
+                </div>
+
+                {/* Local time only (no "Kickoff") */}
+                <p className="text-[10px] text-gray-300">{formatLocalTime(fixture.kickoff_time)}</p>
+              </div>
+            );
+          })}
+        </div>
       )}
     </div>
   );

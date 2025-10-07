@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Route, Routes, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import usePageTracking from "./pages/usePageTracking";
 import Sidebar from "./components/Sidebar";
 import Navbar from "./components/Navbar";
@@ -35,31 +35,54 @@ import Elimination from "./pages/Elimination";
 import EliminationAdmin from "./pages/EliminationAdmin";
 import FPLLive from "./pages/FPLLive";
 
+const PageTrackingWrapper = () => {
+  usePageTracking();
+  return null;
+};
+
 const AppInner = () => {
+  const { pathname } = useLocation();
+
+  // Drawer (mobile) + Collapse (desktop)
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
-  const toggleCollapse = () => setSidebarCollapsed(!sidebarCollapsed);
+  const toggleSidebar = () => setSidebarOpen((v) => !v);
+  const toggleCollapse = () => setSidebarCollapsed((v) => !v);
 
-  const AdRefresh = () => {
-    useEffect(() => {
-      if (window.adsbygoogle) {
-        window.adsbygoogle.push({});
-      }
-    }, [window.location.pathname]);
-    return null;
-  };
+  // Close mobile drawer on route change
+  useEffect(() => {
+    setSidebarOpen(false);
+    // Refresh Google Ads on navigation (if present)
+    try {
+      if (window?.adsbygoogle) window.adsbygoogle.push({});
+    } catch (_) {}
+  }, [pathname]);
 
-  const { pathname } = useLocation();
-  const hideSidebar = pathname.startsWith("/worldcup");
+  // World Cup pages: hide sidebar
+  const hideSidebar = useMemo(() => pathname.startsWith("/worldcup"), [pathname]);
+
+  // Left margin for main content on desktop
+  const mainOffsetClass = useMemo(() => {
+    if (hideSidebar) return "md:ml-0";
+    return sidebarCollapsed ? "md:ml-20" : "md:ml-64";
+  }, [hideSidebar, sidebarCollapsed]);
+
+  // Prevent body scroll when drawer is open on mobile
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => (document.body.style.overflow = "");
+  }, [sidebarOpen]);
 
   return (
     <>
       <PageTrackingWrapper />
 
-      {/* ======= PAGE STRUCTURE ======= */}
-      <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
+      <div className="min-h-screen flex bg-gray-50">
         {/* Sidebar */}
         {!hideSidebar && (
           <Sidebar
@@ -70,20 +93,12 @@ const AppInner = () => {
           />
         )}
 
-        {/* Main Area */}
-        <div
-          className={`flex-1 flex flex-col w-full transition-all duration-300 ${
-            hideSidebar
-              ? "ml-0"
-              : sidebarCollapsed
-              ? "md:ml-20"
-              : "md:ml-64"
-          }`}
-        >
-          {/* Navbar */}
+        {/* Main column */}
+        <div className={`flex-1 flex flex-col w-full transition-all duration-300 ${mainOffsetClass}`}>
+          {/* Top Nav */}
           <Navbar toggleSidebar={toggleSidebar} showMenu={!hideSidebar} />
 
-          {/* Scrollable Content */}
+          {/* Scrollable page content area */}
           <main className="flex-1 px-3 sm:px-6 py-4 overflow-x-hidden overflow-y-auto">
             <Routes>
               {/* Main Pages */}
@@ -96,16 +111,10 @@ const AppInner = () => {
               <Route path="/tieanalyzer" element={<TieAnalyzer />} />
               <Route path="/history" element={<History />} />
               <Route path="/live" element={<Live />} />
-              <Route
-                path="/price-change-prediction"
-                element={<PriceChangePrediction />}
-              />
+              <Route path="/price-change-prediction" element={<PriceChangePrediction />} />
               <Route path="/squad-compare" element={<SquadCompare />} />
               <Route path="/versus" element={<Versus />} />
-              <Route
-                path="/check-registration"
-                element={<CheckRegistration />}
-              />
+              <Route path="/check-registration" element={<CheckRegistration />} />
               <Route path="/captainmode" element={<CaptainMode />} />
               <Route path="/gwwinner" element={<GWwinner />} />
               <Route path="/league-stats" element={<LeagueStats />} />
@@ -114,22 +123,16 @@ const AppInner = () => {
               <Route path="/elimination-admin" element={<EliminationAdmin />} />
               <Route path="/fpllive" element={<FPLLive />} />
 
-              {/* World Cup Pages (no sidebar) */}
+              {/* World Cup (no sidebar) */}
               <Route path="/worldcup" element={<WorldCupLanding />} />
               <Route path="/worldcup/team/:id" element={<WorldCupTeamPage />} />
               <Route path="/worldcup/admin" element={<WorldCupAdmin />} />
-              <Route
-                path="/worldcup/all-managers"
-                element={<AllManagersPage />}
-              />
+              <Route path="/worldcup/all-managers" element={<AllManagersPage />} />
               <Route path="/worldcup/team" element={<WorldCupTeamLanding />} />
               <Route path="/worldcup/list" element={<ListofManagers />} />
               <Route path="/worldcup/fixtures" element={<FixturePage />} />
               <Route path="/worldcup/results" element={<Results />} />
               <Route path="/worldcup/groups" element={<GroupsPage />} />
-
-              {/* Fallback */}
-              <Route path="*" element={<AdRefresh />} />
             </Routes>
 
             <div className="mt-6">
@@ -149,10 +152,5 @@ const App = () => (
     <AppInner />
   </Router>
 );
-
-const PageTrackingWrapper = () => {
-  usePageTracking();
-  return null;
-};
 
 export default App;
