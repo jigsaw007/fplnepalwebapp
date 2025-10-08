@@ -53,13 +53,14 @@ export default function Login() {
             className="w-full px-4 py-2 rounded-lg border border-white/30 bg-white/10 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-yellow-400"
           />
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-semibold py-2 rounded-lg transition-all shadow-md hover:shadow-lg"
-          >
-            {loading ? "Sending Magic Link..." : "Send Magic Link"}
-          </button>
+<button
+  type="submit"
+  disabled={loading}
+  className="w-full bg-yellow-400 hover:bg-yellow-300 text-black font-semibold py-2 rounded-lg transition-all shadow-md hover:shadow-lg"
+>
+  {loading ? "Sending Login Link..." : "Send Login Link"}
+</button>
+
         </form>
 
         <div className="mt-6 text-xs text-white/60">
