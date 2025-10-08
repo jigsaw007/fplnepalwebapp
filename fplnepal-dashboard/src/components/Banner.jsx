@@ -44,9 +44,9 @@ export default function Banner() {
     loadPlayers();
   }, []);
 
-  const handleClick = () => {
-    window.open("https://webapp.fplnepal.com/create-squad", "_blank");
-  };
+const handleClick = () => {
+  window.open("https://webapp.fplnepal.com/create-squad", "_blank");
+};
 
   return (
     <div
