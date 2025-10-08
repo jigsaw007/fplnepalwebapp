@@ -60,9 +60,14 @@ export default function SetTeam() {
     const [activeChip, setActiveChip] = useState(null); // "TC" | "BB" | null
 
   /* ---------- Auth redirect for create ---------- */
-  useEffect(() => {
-    if (!loading && !user && !squadId && !location.state) navigate("/login");
-  }, [loading, user, navigate, squadId, location.state]);
+useEffect(() => {
+  if (!loading && !user && !squadId && !location.state) {
+    navigate("/login", {
+      state: { redirectTo: location.pathname + location.search },
+    });
+  }
+}, [loading, user, navigate, squadId, location]);
+
 
   /* ---------- Fetch bootstrap + fixtures ---------- */
   useEffect(() => {

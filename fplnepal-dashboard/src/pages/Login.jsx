@@ -1,14 +1,29 @@
 import { useState } from "react";
 import { supabase } from "../supabaseClient";
+import { useLocation } from "react-router-dom";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const location = useLocation();
+
+  // 🧭 Get redirect target (fallback: home)
+  const redirectTo = location.state?.redirectTo || "/";
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithOtp({ email });
+
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        // ✅ Send redirect info to Supabase magic link
+        emailRedirectTo: `${window.location.origin}/auth/callback?redirect=${encodeURIComponent(
+          redirectTo
+        )}`,
+      },
+    });
+
     setLoading(false);
     if (error) alert(error.message);
     else alert("✅ Check your email for the login link!");
