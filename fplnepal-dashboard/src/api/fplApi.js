@@ -387,4 +387,17 @@ export async function fetchGwLive(gw) {
 }
 
 
+export const saveSquad = async (squad) => {
+  const res = await fetch(`${BASE_URL}/squad`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(squad),
+  });
+  return await res.json();
+};
+
+export const fetchUserSquads = async (userId) => {
+  const res = await fetch(`${BASE_URL}/squad/${userId}`);
+  return await res.json();
+};
 

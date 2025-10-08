@@ -1,3 +1,6 @@
+// ✅ Added missing imports at the very top
+import React from "react";
+import ReactDOM from "react-dom/client"; // Needed for ReactDOM.createRoot
 import { BrowserRouter as Router, Route, Routes, useLocation } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import usePageTracking from "./pages/usePageTracking";
@@ -34,6 +37,12 @@ import MonthlyWinner from "./pages/MonthlyWinner";
 import Elimination from "./pages/Elimination";
 import EliminationAdmin from "./pages/EliminationAdmin";
 import FPLLive from "./pages/FPLLive";
+import CreateSquad from "./pages/CreateSquad";
+import TinkerSquad from "./pages/TinkerSquad";
+import MySquads from "./pages/MySquads";
+import SetTeam from "./pages/SetTeam";
+import { AuthProvider } from "./context/AuthContext";
+import Login from "./pages/Login"; // ✅ Added login route import
 
 const PageTrackingWrapper = () => {
   usePageTracking();
@@ -122,6 +131,13 @@ const AppInner = () => {
               <Route path="/elimination" element={<Elimination />} />
               <Route path="/elimination-admin" element={<EliminationAdmin />} />
               <Route path="/fpllive" element={<FPLLive />} />
+              <Route path="/create-squad" element={<CreateSquad />} />
+              <Route path="/tinker-squad/:id" element={<TinkerSquad />} />
+              <Route path="/my-squads" element={<MySquads />} />
+              <Route path="/set-team" element={<SetTeam />} />
+
+              {/* ✅ Added new Login Route (for Supabase Auth) */}
+              <Route path="/login" element={<Login />} />
 
               {/* World Cup (no sidebar) */}
               <Route path="/worldcup" element={<WorldCupLanding />} />
@@ -147,6 +163,7 @@ const AppInner = () => {
   );
 };
 
+// ✅ App and render (unchanged, just wrapped correctly with AuthProvider)
 const App = () => (
   <Router>
     <AppInner />

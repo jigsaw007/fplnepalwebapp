@@ -1755,3 +1755,33 @@ app.get("/event-live/:gw", async (req, res) => {
 });
 
 
+app.post("/squad", async (req, res) => {
+  if (!requireSB(res)) return;
+  const { user_id, squad_name, players, budget } = req.body;
+  try {
+    const { data, error } = await supabase
+      .from("squads")
+      .upsert({ user_id, squad_name, players, budget }, { onConflict: "id" });
+    if (error) throw error;
+    res.json({ success: true, data });
+  } catch (err) {
+    console.error("Error saving squad:", err.message);
+    res.status(500).json({ error: "Failed to save squad" });
+  }
+});
+
+app.get("/squad/:userId", async (req, res) => {
+  if (!requireSB(res)) return;
+  const { userId } = req.params;
+  try {
+    const { data, error } = await supabase
+      .from("squads")
+      .select("*")
+      .eq("user_id", userId);
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch squads" });
+  }
+});
+
