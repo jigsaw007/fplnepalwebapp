@@ -43,6 +43,7 @@ import MySquads from "./pages/MySquads";
 import SetTeam from "./pages/SetTeam";
 import { AuthProvider } from "./context/AuthContext";
 import Login from "./pages/Login"; // ✅ Added login route import
+import AuthCallback from "./pages/AuthCallback";
 
 const PageTrackingWrapper = () => {
   usePageTracking();
@@ -135,6 +136,7 @@ const AppInner = () => {
               <Route path="/tinker-squad/:id" element={<TinkerSquad />} />
               <Route path="/my-squads" element={<MySquads />} />
               <Route path="/set-team" element={<SetTeam />} />
+              <Route path="/auth/callback" element={<AuthCallback />} />
 
               {/* ✅ Added new Login Route (for Supabase Auth) */}
               <Route path="/login" element={<Login />} />
