@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { fetchFPLData } from "../api/fplApi";
 import PlayerSelector from "../components/PlayerSelector";
 import BudgetSelector from "../components/BudgetSelector";
+import { useAuth } from "../context/AuthContext";
+
+
 
 const MAX_PER_POSITION = { 1: 2, 2: 5, 3: 5, 4: 3 };
 const MAX_PER_CLUB = 3;
@@ -17,6 +20,13 @@ export default function CreateSquad() {
   const [customBudget, setCustomBudget] = useState(100.0);
 
   /* ========================= FETCH DATA ========================= */
+  const { user, loading } = useAuth();
+
+useEffect(() => {
+  if (!loading && !user) {
+    navigate("/login", { state: { redirectTo: "/create-squad" } });
+  }
+}, [loading, user, navigate]);
   useEffect(() => {
     (async () => {
       const data = await fetchFPLData();

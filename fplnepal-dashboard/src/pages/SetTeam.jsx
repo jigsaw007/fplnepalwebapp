@@ -43,6 +43,12 @@ export default function SetTeam() {
   const location = useLocation(); // ✅ NEW
   const squadId = searchParams.get("squad");
   const { user, loading } = useAuth();
+  useEffect(() => {
+  if (!loading && !user) {
+    navigate("/login", { state: { redirectTo: "/set-team" } });
+  }
+}, [loading, user, navigate]);
+
 
   const [teams, setTeams] = useState([]);
   const [fixtures, setFixtures] = useState([]);

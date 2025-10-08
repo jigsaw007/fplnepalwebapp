@@ -9,14 +9,30 @@ import Live from "../components/Live";
 import PriceChangePrediction from "../components/PriceChangePrediction";
 import AdComponent from "../components/AdComponent";
 import Banner from "../components/Banner";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+
+
+
 
 const Dashboard = () => {
+  const { user } = useAuth();
+const navigate = useNavigate();
+
+const handleBannerClick = () => {
+  if (user) navigate("/create-squad");
+  else navigate("/login", { state: { redirectTo: "/create-squad" } });
+};
   return (
     <div className="p-2 sm:p-4 w-full">
-      {/* ================= BANNER SECTION ================= */}
-      <section className="rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 text-white p-5 sm:p-6 shadow-md mb-5">
-        <Banner />
-      </section>
+{/* ================= BANNER SECTION ================= */}
+<section
+  onClick={handleBannerClick}
+  className="cursor-pointer rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 text-white p-5 sm:p-6 shadow-md mb-5 hover:opacity-95 transition"
+>
+  <Banner />
+</section>
+
 
       {/* ================= TOP STATS SECTION ================= */}
       <section className="rounded-2xl bg-gradient-to-r from-indigo-700 via-purple-700 to-fuchsia-700 text-white p-4 sm:p-5 shadow-md mb-6">
