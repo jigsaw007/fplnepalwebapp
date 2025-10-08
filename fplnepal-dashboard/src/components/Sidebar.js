@@ -45,17 +45,18 @@ const Sidebar = ({ isOpen, toggleSidebar, collapsed, toggleCollapse }) => {
           >
             ✖
           </button>
+<div className="flex items-center gap-2">
+  <div className="h-7 w-7 rounded-lg bg-white/15 grid place-items-center text-lg">🏔️</div>
+  <NavLink
+    to="/"
+    className={`text-xl font-extrabold tracking-tight transition-all duration-300 hover:underline ${
+      showLabels ? "opacity-100 w-auto" : "opacity-0 w-0"
+    }`}
+  >
+    FPL Nepal
+  </NavLink>
+</div>
 
-          <div className="flex items-center gap-2">
-            <div className="h-7 w-7 rounded-lg bg-white/15 grid place-items-center text-lg">🏔️</div>
-            <h2
-              className={`text-xl font-extrabold tracking-tight transition-all duration-300
-                ${showLabels ? "opacity-100 w-auto" : "opacity-0 w-0"}
-              `}
-            >
-              FPL Nepal
-            </h2>
-          </div>
           {showLabels && <p className="text-xs text-white/60 mt-0.5">Webapp</p>}
 
           {/* Desktop collapse toggle */}
