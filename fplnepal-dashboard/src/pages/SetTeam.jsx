@@ -43,11 +43,10 @@ export default function SetTeam() {
   const location = useLocation(); // ✅ NEW
   const squadId = searchParams.get("squad");
   const { user, loading } = useAuth();
-  useEffect(() => {
-  if (!loading && !user) {
-    navigate("/login", { state: { redirectTo: "/set-team" } });
-  }
-}, [loading, user, navigate]);
+useEffect(() => {
+  // Only redirect to login when user tries to save (handled in save function)
+  // So we do nothing here for public readonly view
+}, []);
 
 
   const [teams, setTeams] = useState([]);
@@ -91,11 +90,12 @@ useEffect(() => {
     const loadSquad = async () => {
       if (squadId) {
         // ✅ Existing saved squad (DB)
-        const { data, error } = await supabase
-          .from("squads")
-          .select("*")
-          .eq("id", squadId)
-          .single();
+const { data, error } = await supabase
+  .from("squads_public") // ✅ public view
+  .select("*")
+  .eq("id", squadId)
+  .single();
+
 
         if (error || !data) {
           alert("❌ Squad not found!");
