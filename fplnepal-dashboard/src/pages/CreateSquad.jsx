@@ -14,6 +14,8 @@ export default function CreateSquad() {
   const navigate = useNavigate();
   const [players, setPlayers] = useState([]);
   const [teams, setTeams] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   const [squad, setSquad] = useState({ 1: [], 2: [], 3: [], 4: [] });
   const [budget, setBudget] = useState(100.0);
   const [budgetMode, setBudgetMode] = useState("default");
@@ -27,14 +29,18 @@ useEffect(() => {
     navigate("/login", { state: { redirectTo: "/create-squad" } });
   }
 }, [loading, user, navigate]);
-  useEffect(() => {
-    (async () => {
-      const data = await fetchFPLData();
-      if (!data) return;
+useEffect(() => {
+  (async () => {
+    setIsLoading(true);
+    const data = await fetchFPLData();
+    if (data) {
       setPlayers(data.elements || []);
       setTeams(data.teams || []);
-    })();
-  }, []);
+    }
+    setIsLoading(false);
+  })();
+}, []);
+
 
   useEffect(() => {
     setBudget(budgetMode === "unlimited" ? Infinity : customBudget);
@@ -168,6 +174,14 @@ useEffect(() => {
   };
 
   /* ========================= RENDER ========================= */
+  if (isLoading) {
+  return (
+    <div className="flex flex-col justify-center items-center h-screen bg-gray-50">
+      <div className="w-12 h-12 border-4 border-gray-300 border-t-indigo-600 rounded-full animate-spin"></div>
+      <p className="mt-4 text-gray-600 text-sm">Loading Fantasy Premier League data...</p>
+    </div>
+  );
+}
   return (
     <div className="p-3 sm:p-4 space-y-3">
       {/* Budget Options */}
