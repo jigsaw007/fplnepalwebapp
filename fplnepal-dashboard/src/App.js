@@ -44,6 +44,7 @@ import SetTeam from "./pages/SetTeam";
 import { AuthProvider } from "./context/AuthContext";
 import Login from "./pages/Login"; // ✅ Added login route import
 import AuthCallback from "./pages/AuthCallback";
+import TeamScores from "./pages/WorldCup/TeamScores";
 
 const PageTrackingWrapper = () => {
   usePageTracking();
@@ -151,6 +152,7 @@ const AppInner = () => {
               <Route path="/worldcup/fixtures" element={<FixturePage />} />
               <Route path="/worldcup/results" element={<Results />} />
               <Route path="/worldcup/groups" element={<GroupsPage />} />
+              <Route path="/worldcup/scores" element={<TeamScores />} />
             </Routes>
 
             <div className="mt-6">
