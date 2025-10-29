@@ -152,7 +152,7 @@ export default function TeamScores() {
           </button>
         </div>
 
-        {/* Spinner */}
+        {/* Loading Spinner */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-12 text-gray-700">
             <motion.div
