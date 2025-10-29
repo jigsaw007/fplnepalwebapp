@@ -7,6 +7,7 @@ export default function TeamScores() {
   const [nationMap, setNationMap] = useState([]);
   const [scores, setScores] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [selectedGW, setSelectedGW] = useState(10);
 
   const TEAMS_CSV =
@@ -49,42 +50,56 @@ export default function TeamScores() {
     load();
   }, []);
 
+  // Fetch total GW points for a single FPL manager (via backend)
   const fetchGWPoints = async (teamId, gw) => {
     try {
       const res = await fetch(
-        `https://fantasy.premierleague.com/api/entry/${teamId}/event/${gw}/picks/`
+        `/.netlify/functions/api/worldcup-teamscore/${teamId}/${gw}`
       );
       if (!res.ok) return 0;
       const data = await res.json();
-      return data.entry_history?.points || 0;
-    } catch {
+      return data?.total_points || 0;
+    } catch (e) {
+      console.error("Error fetching GW points:", e);
       return 0;
     }
   };
 
+  // Main function to fetch all nations
   const handleFetchScores = async () => {
     setLoading(true);
+    setScores([]);
+    setProgress(0);
+
+    const entries = Object.entries(teams);
     const newScores = [];
 
-    for (const [nationId, managerIds] of Object.entries(teams)) {
-      let total = 0;
-      for (const id of managerIds) {
-        const pts = await fetchGWPoints(id, selectedGW);
-        total += pts;
-        await new Promise((r) => setTimeout(r, 600)); // delay to avoid rate limit
-      }
+    // Fetch 8 nations in parallel per batch
+    const BATCH_SIZE = 8;
+    for (let i = 0; i < entries.length; i += BATCH_SIZE) {
+      const batch = entries.slice(i, i + BATCH_SIZE);
 
-      const nationInfo =
-        nationMap.find((n) => n["Slot Number"] === nationId) || {};
-      const nationName = nationInfo["Nation"] || `Nation ${nationId}`;
-      const iso2 = nationInfo["ISO2"]?.toLowerCase();
+      const batchResults = await Promise.all(
+        batch.map(async ([nationId, managerIds]) => {
+          const pointsArray = await Promise.all(
+            managerIds.map((id) => fetchGWPoints(id, selectedGW))
+          );
+          const total = pointsArray.reduce((a, b) => a + b, 0);
 
-      newScores.push({
-        nationId,
-        nationName,
-        iso2,
-        total,
-      });
+          const nationInfo =
+            nationMap.find((n) => n["Slot Number"] === nationId) || {};
+          const nationName = nationInfo["Nation"] || `Nation ${nationId}`;
+          const iso2 = nationInfo["ISO2"]?.toLowerCase();
+
+          return { nationId, nationName, iso2, total };
+        })
+      );
+
+      newScores.push(...batchResults);
+      setProgress((p) => p + batchResults.length);
+
+      // small pause between batches
+      await new Promise((r) => setTimeout(r, 400));
     }
 
     newScores.sort((a, b) => b.total - a.total);
@@ -98,6 +113,7 @@ export default function TeamScores() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-yellow-50 via-white to-orange-50">
       <div className="max-w-6xl mx-auto px-4 py-8">
+        {/* Tabs */}
         <TabsNav
           tabs={["Teams", "Groups", "Fixtures", "Results", "Scores"]}
           active={"Scores"}
@@ -108,9 +124,10 @@ export default function TeamScores() {
         />
 
         <h1 className="text-3xl sm:text-4xl font-extrabold text-orange-900 mb-4">
-          🌍 Team Total Scores by Gameweek
+          🌍 World Cup Team Scores
         </h1>
 
+        {/* Gameweek selector */}
         <div className="flex gap-4 items-center mb-6">
           <label className="text-sm text-gray-600">Select Gameweek:</label>
           <select
@@ -133,12 +150,39 @@ export default function TeamScores() {
           </button>
         </div>
 
+        {/* Spinner */}
         {loading && (
-          <div className="text-center text-gray-600 py-10">
-            Fetching scores... this may take a while ⏳
+          <div className="flex flex-col items-center justify-center py-10 text-gray-700">
+            <svg
+              className="animate-spin h-10 w-10 text-orange-600 mb-3"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              />
+            </svg>
+            <p className="text-base mb-1">
+              Fetching Gameweek {selectedGW} data...
+            </p>
+            <p className="text-sm text-gray-600">
+              {progress} / {Object.keys(teams).length} nations done
+            </p>
           </div>
         )}
 
+        {/* Results table */}
         {!loading && scores.length > 0 && (
           <div className="overflow-x-auto bg-white shadow rounded-xl">
             <table className="min-w-full text-sm">
@@ -146,7 +190,9 @@ export default function TeamScores() {
                 <tr>
                   <th className="px-4 py-2 text-left">#</th>
                   <th className="px-4 py-2 text-left">Nation</th>
-                  <th className="px-4 py-2 text-right">GW {selectedGW} Points</th>
+                  <th className="px-4 py-2 text-right">
+                    GW {selectedGW} Points
+                  </th>
                 </tr>
               </thead>
               <tbody>

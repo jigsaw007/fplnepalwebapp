@@ -1785,3 +1785,39 @@ app.get("/squad/:userId", async (req, res) => {
   }
 });
 
+// ---------------------------------------------
+// 🌍 World Cup Team Score Endpoint
+// ---------------------------------------------
+app.get("/worldcup-teamscore/:teamId/:gw", async (req, res) => {
+  const { teamId, gw } = req.params;
+
+  try {
+    // FPL official endpoint for team Gameweek history
+    const url = `https://fantasy.premierleague.com/api/entry/${teamId}/event/${gw}/picks/`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      return res.status(404).json({
+        error: `FPL API returned ${response.status} for team ${teamId}, GW ${gw}`,
+        total_points: 0,
+      });
+    }
+
+    const data = await response.json();
+    const totalPoints = data?.entry_history?.points ?? 0;
+
+    res.json({
+      teamId,
+      gw,
+      total_points: totalPoints,
+      success: true,
+    });
+  } catch (error) {
+    console.error("Error fetching worldcup team score:", error);
+    res.status(500).json({
+      success: false,
+      error: "Failed to fetch worldcup team score",
+      details: error.message,
+    });
+  }
+});
