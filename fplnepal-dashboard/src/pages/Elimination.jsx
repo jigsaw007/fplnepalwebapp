@@ -101,8 +101,22 @@ const netColor = "text-rose-700 bg-rose-50 border-rose-200";
       "
     >
       <div>
-        <div className="font-semibold text-gray-800 text-sm md:text-base">{primary}</div>
-        <div className="text-[11px] text-gray-500">{team || "—"} • ID {row.entry_id}</div>
+<div className="font-semibold text-gray-800 text-sm md:text-base">
+<a
+  href={`https://fantasy.premierleague.com/entry/${row.entry_id}/event/${gw}`}
+  target="_blank"
+  rel="noopener noreferrer"
+  className="text-gray-800 hover:text-gray-900 no-underline"
+  style={{ textDecoration: "none" }}
+>
+  {primary}
+</a>
+
+</div>
+<div className="text-[11px] text-gray-500">
+  {team || "—"} • ID {row.entry_id}
+</div>
+
       </div>
 
       <div className="flex items-center gap-2">
