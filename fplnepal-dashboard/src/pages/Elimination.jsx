@@ -87,11 +87,8 @@ function EliminatedRow({ gw, row, namesById, ensureName }) {
   const net = hasHits ? (Number(row.gw_points || 0) - Number(row.hits || 0)) : row.gw_points;
 
   // Determine tone by performance
-  const netColor =
-    net >= 70 ? "text-green-700 bg-green-50 border-green-200" :
-    net >= 50 ? "text-emerald-700 bg-emerald-50 border-emerald-200" :
-    net >= 35 ? "text-yellow-700 bg-yellow-50 border-yellow-200" :
-    "text-rose-700 bg-rose-50 border-rose-200";
+const netColor = "text-rose-700 bg-rose-50 border-rose-200";
+
 
   return (
     <div
