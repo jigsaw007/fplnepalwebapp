@@ -171,15 +171,23 @@ function GWCard({ gw, dateLabel, eliminated, remainingCount, namesById, expected
         </div>
       ) : (
         <div className="space-y-3">
-          {eliminated.map((r) => (
-            <EliminatedRow
-              key={`${gw}-${r.entry_id}`}
-              gw={gw}
-              row={r}
-              namesById={namesById}
-              ensureName={ensureName}
-            />
-          ))}
+{eliminated
+  .slice()
+  .sort((a, b) => {
+    const netA = (a.gw_points || 0) - (a.hits || 0);
+    const netB = (b.gw_points || 0) - (b.hits || 0);
+    return netA - netB; // low to high
+  })
+  .map((r) => (
+    <EliminatedRow
+      key={`${gw}-${r.entry_id}`}
+      gw={gw}
+      row={r}
+      namesById={namesById}
+      ensureName={ensureName}
+    />
+  ))}
+
         </div>
       )}
     </div>

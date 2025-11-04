@@ -211,7 +211,7 @@ export default function FixturePage() {
                     <span className="text-xs opacity-90">{matches.length} matches</span>
                   </div>
 
-                  <div className="p-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  <div className="p-5 grid grid-cols-1 sm:grid-cols-2 gap-4 justify-items-center">
                     {matches.map((m, idx) => {
                       const H = resolveNation(m.homeRaw);
                       const A = resolveNation(m.awayRaw);

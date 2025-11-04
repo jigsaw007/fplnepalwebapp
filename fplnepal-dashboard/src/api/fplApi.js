@@ -400,4 +400,3 @@ export const fetchUserSquads = async (userId) => {
   const res = await fetch(`${BASE_URL}/squad/${userId}`);
   return await res.json();
 };
-
