@@ -16,6 +16,7 @@ const ClassicLeague = () => {
 
       const cacheKey = `${selectedLeague}-${selectedGameweek}`;
       const cachedData = sessionStorage.getItem(cacheKey);
+      
 
       if (cachedData) {
         setStandings(JSON.parse(cachedData));
