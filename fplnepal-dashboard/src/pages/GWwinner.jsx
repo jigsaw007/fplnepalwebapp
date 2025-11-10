@@ -173,12 +173,13 @@ export default function GWwinner() {
     }
 
     // Normal winner
-    const markedCandidates = candidates.map((r) => ({
-      ...r,
-      _isTie: true,
-      _isTieWinner: r.manager_id === winnerId,
-      _tieReason: reason, // "goals_scored" | "goals_conceded"
-    }));
+const markedCandidates = candidates.map((r) => ({
+  ...r,
+  _isTie: r.manager_id !== winnerId, // Only losers get tie badge
+  _isTieWinner: r.manager_id === winnerId,
+  _tieReason: reason,
+}));
+
     const winnerRow = markedCandidates.find((r) => r._isTieWinner);
     return { picks: [winnerRow], remaining: removeByIds(pool, candidates.map((c) => c.manager_id)) };
   }
@@ -229,12 +230,13 @@ const handleFetch = async (targetGw) => {
       chosen.push(...marked);
       pool = removeByIds(pool, candidates.map((c) => c.manager_id));
     } else {
-      const markedCandidates = candidates.map((r) => ({
-        ...r,
-        _isTie: true,
-        _isTieWinner: r.manager_id === winnerId,
-        _tieReason: reason,
-      }));
+const markedCandidates = candidates.map((r) => ({
+  ...r,
+  _isTie: r.manager_id !== winnerId, // Only losers get tie badge
+  _isTieWinner: r.manager_id === winnerId,
+  _tieReason: reason,
+}));
+
       const winnerRow = markedCandidates.find((r) => r._isTieWinner);
       chosen.push(winnerRow);
       pool = removeByIds(pool, candidates.map((c) => c.manager_id));
@@ -259,11 +261,13 @@ const handleFetch = async (targetGw) => {
     const s = Number(r.net_points);
     if (!Number.isNaN(s)) scoreCounts[s] = (scoreCounts[s] || 0) + 1;
   });
-  const markScoreTies = (rows) =>
-    rows.map((r) => ({
-      ...r,
-      _hasScoreTie: scoreCounts[Number(r.net_points)] > 1,
-    }));
+const markScoreTies = (rows) =>
+  rows.map((r) => ({
+    ...r,
+    _hasScoreTie:
+      !r._tieReason && scoreCounts[Number(r.net_points)] > 1,
+  }));
+
 
   setTop3(markScoreTies(chosen));
   setOthers(markScoreTies(othersArr));
