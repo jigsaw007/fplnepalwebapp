@@ -183,64 +183,93 @@ export default function GWwinner() {
     return { picks: [winnerRow], remaining: removeByIds(pool, candidates.map((c) => c.manager_id)) };
   }
 
-  const handleFetch = async (targetGw) => {
-    setLoading(true);
+const handleFetch = async (targetGw) => {
+  setLoading(true);
 
-    // fetch both gwTop and full standings
-    const gwTop = await fetchGwTop(LEAGUE_ID, targetGw);
-    const standings = await fetchClassicLeague(LEAGUE_ID, targetGw);
+  // fetch both gwTop and full standings
+  const gwTop = await fetchGwTop(LEAGUE_ID, targetGw);
+  const standings = await fetchClassicLeague(LEAGUE_ID, targetGw);
 
-    // rank map
-    const rankMap = {};
-    standings.forEach((s) => { rankMap[s.id] = s.rank; });
+  // rank map
+  const rankMap = {};
+  standings.forEach((s) => { rankMap[s.id] = s.rank; });
 
-    // merge
-    const top3WithRank = (gwTop?.top3 || []).map((r) => ({ ...r, league_rank: rankMap[r.manager_id] || "-" }));
-    const othersWithRank = (gwTop?.others || []).map((r) => ({ ...r, league_rank: rankMap[r.manager_id] || "-" }));
+  // merge and compute NET points (GW points minus transfer cost)
+  const addNetPoints = (arr) =>
+    (arr || []).map((r) => ({
+      ...r,
+      league_rank: rankMap[r.manager_id] || "-",
+      net_points: (Number(r.gw_points) ?? 0) - (Number(r.transfers_cost) ?? 0),
+    }));
 
-    // Build a single pool to choose Top 1,2,3 strictly with tie rules
-    let pool = [...top3WithRank, ...othersWithRank];
-    const chosen = [];
+  const top3WithRank = addNetPoints(gwTop?.top3);
+  const othersWithRank = addNetPoints(gwTop?.others);
 
-    // Pick 1st, 2nd, 3rd
-    for (let i = 0; i < 3; i++) {
-      const { picks, remaining } = await pickOnePosition(targetGw, pool);
-      if (picks.length === 0) break;
-      chosen.push(...picks);
-      pool = remaining;
-      // If a position returned multiple (random draw pending), we still proceed:
-      // - For 1st or 2nd, we continue to pick next position from *remaining* pool.
-      // - For 3rd, it's fine to have >3 cards; we'll display them all.
-    }
+  // Build a single pool to choose Top 1,2,3 strictly with tie rules
+  let pool = [...top3WithRank, ...othersWithRank];
+  const chosen = [];
 
-    // If we selected fewer than 3 cards (because pool ended early), top up from pool by score desc
-    if (chosen.length < 3 && pool.length > 0) {
-      const sortedPool = [...pool].sort((a, b) => Number(b.gw_points) - Number(a.gw_points));
-      while (chosen.length < 3 && sortedPool.length) chosen.push(sortedPool.shift());
-      pool = sortedPool;
-    }
+  // Pick 1st, 2nd, 3rd (based on net points)
+  for (let i = 0; i < 3; i++) {
+    const bestScore = Math.max(...pool.map((r) => Number(r.net_points ?? -1)));
+    const candidates = pool.filter((r) => Number(r.net_points) === bestScore);
 
-    // Compute Others = everything not in chosen (by manager_id)
-    const chosenIds = new Set(chosen.map((c) => c.manager_id));
-    let othersArr = [...top3WithRank, ...othersWithRank].filter((r) => !chosenIds.has(r.manager_id));
+    if (candidates.length === 0) break;
 
-    // Mark ANY score ties (visual badge) across *all* rows we will render
-    const everyone = [...chosen, ...othersArr];
-    const scoreCounts = {};
-    everyone.forEach((r) => {
-      const s = Number(r.gw_points);
-      if (!Number.isNaN(s)) scoreCounts[s] = (scoreCounts[s] || 0) + 1;
-    });
-    const markScoreTies = (rows) =>
-      rows.map((r) => ({
+    // Resolve ties normally
+    const { winnerId, reason, stillTie } = await resolveTieForTop(targetGw, candidates);
+
+    if (stillTie || !winnerId) {
+      const marked = candidates.map((r) => ({
         ...r,
-        _hasScoreTie: scoreCounts[Number(r.gw_points)] > 1,
+        _isTie: true,
+        _tieReason: "random_draw_pending",
+        _randomDrawPending: true,
       }));
+      chosen.push(...marked);
+      pool = removeByIds(pool, candidates.map((c) => c.manager_id));
+    } else {
+      const markedCandidates = candidates.map((r) => ({
+        ...r,
+        _isTie: true,
+        _isTieWinner: r.manager_id === winnerId,
+        _tieReason: reason,
+      }));
+      const winnerRow = markedCandidates.find((r) => r._isTieWinner);
+      chosen.push(winnerRow);
+      pool = removeByIds(pool, candidates.map((c) => c.manager_id));
+    }
+  }
 
-    setTop3(markScoreTies(chosen));
-    setOthers(markScoreTies(othersArr));
-    setLoading(false);
-  };
+  // If we selected fewer than 3 cards, fill up based on net points
+  if (chosen.length < 3 && pool.length > 0) {
+    const sortedPool = [...pool].sort((a, b) => Number(b.net_points) - Number(a.net_points));
+    while (chosen.length < 3 && sortedPool.length) chosen.push(sortedPool.shift());
+    pool = sortedPool;
+  }
+
+  // Compute Others = everything not in chosen (by manager_id)
+  const chosenIds = new Set(chosen.map((c) => c.manager_id));
+  let othersArr = [...top3WithRank, ...othersWithRank].filter((r) => !chosenIds.has(r.manager_id));
+
+  // Mark score ties (visual badge)
+  const everyone = [...chosen, ...othersArr];
+  const scoreCounts = {};
+  everyone.forEach((r) => {
+    const s = Number(r.net_points);
+    if (!Number.isNaN(s)) scoreCounts[s] = (scoreCounts[s] || 0) + 1;
+  });
+  const markScoreTies = (rows) =>
+    rows.map((r) => ({
+      ...r,
+      _hasScoreTie: scoreCounts[Number(r.net_points)] > 1,
+    }));
+
+  setTop3(markScoreTies(chosen));
+  setOthers(markScoreTies(othersArr));
+  setLoading(false);
+};
+
 
   useEffect(() => {
     if (gw) handleFetch(gw);
@@ -408,7 +437,7 @@ export default function GWwinner() {
                   <div className="mt-4">
                     <div className="text-[11px] uppercase tracking-wider text-gray-500">GW Score</div>
                     <div className="flex items-baseline gap-2">
-                      <GwTopScoreBench gwPoints={row.gw_points} squad={row.squad} chip={row.chip} scoreClass={style.score} />
+                      <GwTopScoreBench gwPoints={row.net_points} squad={row.squad} chip={row.chip} scoreClass={style.score} />
                       <GwTopScoreTransfer transfersMade={row.event_transfers} transfersCost={row.transfers_cost} chip={row.chip} />
                     </div>
                   </div>
@@ -501,7 +530,7 @@ export default function GWwinner() {
                     </td>
                     <td className="py-3 px-4 text-gray-700">{row.team_name}</td>
                     <td className="py-3 px-4 font-medium">{row.captain_name}</td>
-                    <td className="py-3 px-4 font-semibold">{row.gw_points}</td>
+                    <td className="py-3 px-4 font-semibold">{row.net_points}</td>
                   </tr>
                 );
               })}
@@ -536,7 +565,7 @@ export default function GWwinner() {
                   </div>
                   <div className="text-right">
                     <div className="text-xs text-gray-500">GW Score</div>
-                    <div className="text-base font-semibold">{row.gw_points}</div>
+                    <div className="text-base font-semibold">{row.net_points}</div>
                   </div>
                 </div>
                 <div className="mt-3 text-sm">
