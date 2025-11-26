@@ -148,41 +148,44 @@ export default function GWwinner() {
     return pool.filter((r) => !set.has(r.manager_id));
   }
 
-  async function pickOnePosition(targetGw, pool) {
-    if (pool.length === 0) return { picks: [], remaining: pool };
+async function pickOnePosition(targetGw, pool) {
+  if (pool.length === 0) return { picks: [], remaining: pool };
 
-const bestScore = Math.max(...pool.map((r) => Number(r.net_points ?? -1)));
-const candidates = pool.filter((r) => Number(r.net_points) === bestScore);
+  const bestScore = Math.max(...pool.map((r) => Number(r.net_points ?? -1)));
+  const candidates = pool.filter((r) => Number(r.net_points) === bestScore);
 
+  if (candidates.length === 1) {
+    return { picks: [{ ...candidates[0] }], remaining: removeByIds(pool, [candidates[0].manager_id]) };
+  }
 
-    if (candidates.length === 1) {
-      return { picks: [{ ...candidates[0] }], remaining: removeByIds(pool, [candidates[0].manager_id]) };
-    }
+  // Resolve with TieAnalyzer
+  const { winnerId, reason, stillTie } = await resolveTieForTop(targetGw, candidates);
 
-    // Resolve with TieAnalyzer
-    const { winnerId, reason, stillTie } = await resolveTieForTop(targetGw, candidates);
-
-    if (stillTie || !winnerId) {
-      // Mark ALL candidates as random-draw pending and return them all (so 3rd place may show multiple)
-      const marked = candidates.map((r) => ({
-        ...r,
-        _isTie: true,
-        _tieReason: "random_draw_pending",
-        _randomDrawPending: true,
-      }));
-      return { picks: marked, remaining: removeByIds(pool, candidates.map((c) => c.manager_id)) };
-    }
-
-    // Normal winner
-    const markedCandidates = candidates.map((r) => ({
+  if (stillTie || !winnerId) {
+    // For random draw pending, keep ALL candidates in the same position group
+    const marked = candidates.map((r) => ({
       ...r,
       _isTie: true,
-      _isTieWinner: r.manager_id === winnerId,
-      _tieReason: reason, // "goals_scored" | "goals_conceded"
+      _tieReason: "random_draw_pending",
+      _randomDrawPending: true,
     }));
-    const winnerRow = markedCandidates.find((r) => r._isTieWinner);
-    return { picks: [winnerRow], remaining: removeByIds(pool, candidates.map((c) => c.manager_id)) };
+    return { picks: marked, remaining: removeByIds(pool, candidates.map((c) => c.manager_id)) };
   }
+
+  // FIX: Only remove the WINNER, keep the losers in pool for next positions
+  const markedCandidates = candidates.map((r) => ({
+    ...r,
+    _isTie: true,
+    _isTieWinner: r.manager_id === winnerId,
+    _tieReason: reason,
+  }));
+  
+  const winnerRow = markedCandidates.find((r) => r._isTieWinner);
+  const loserIds = candidates.filter(c => c.manager_id !== winnerId).map(c => c.manager_id);
+  
+  // Only remove winner, losers stay in pool for next positions
+  return { picks: [winnerRow], remaining: removeByIds(pool, [winnerId]) };
+}
 
   const handleFetch = async (targetGw) => {
     setLoading(true);
