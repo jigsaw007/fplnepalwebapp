@@ -45,6 +45,7 @@ import { AuthProvider } from "./context/AuthContext";
 import Login from "./pages/Login"; // ✅ Added login route import
 import AuthCallback from "./pages/AuthCallback";
 import TeamScores from "./pages/WorldCup/TeamScores";
+import CleanSheetPrediction from "./pages/CleanSheetPrediction";
 
 const PageTrackingWrapper = () => {
   usePageTracking();
@@ -138,6 +139,8 @@ const AppInner = () => {
               <Route path="/my-squads" element={<MySquads />} />
               <Route path="/set-team" element={<SetTeam />} />
               <Route path="/auth/callback" element={<AuthCallback />} />
+              <Route path="/clean-sheet" element={<CleanSheetPrediction />} />
+
 
               {/* ✅ Added new Login Route (for Supabase Auth) */}
               <Route path="/login" element={<Login />} />

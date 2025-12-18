@@ -1821,3 +1821,26 @@ app.get("/worldcup-teamscore/:teamId/:gw", async (req, res) => {
     });
   }
 });
+
+// ✅ Clean Sheet Data 
+app.get("/clean-sheet-data", async (req, res) => {
+  try {
+    const [fixturesRes, bootstrapRes] = await Promise.all([
+      axios.get(`${FPL_BASE_URL}/fixtures/`, {
+        headers: { "User-Agent": "Mozilla/5.0" },
+      }),
+      axios.get(`${FPL_BASE_URL}/bootstrap-static/`, {
+        headers: { "User-Agent": "Mozilla/5.0" },
+      }),
+    ]);
+
+    res.json({
+      fixtures: fixturesRes.data,
+      teams: bootstrapRes.data.teams,
+      events: bootstrapRes.data.events,
+    });
+  } catch (error) {
+    console.error("Error fetching clean sheet data:", error.message);
+    res.status(500).json({ error: "Failed to fetch clean sheet data" });
+  }
+});

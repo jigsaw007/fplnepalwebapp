@@ -400,3 +400,15 @@ export const fetchUserSquads = async (userId) => {
   const res = await fetch(`${BASE_URL}/squad/${userId}`);
   return await res.json();
 };
+
+// ✅ Clean Sheet Data (Dedicated)
+export const fetchCleanSheetData = async () => {
+  try {
+    const response = await fetch(`${BASE_URL}/clean-sheet-data`);
+    if (!response.ok) throw new Error("Failed to fetch clean sheet data");
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching clean sheet data:", error);
+    return null;
+  }
+};

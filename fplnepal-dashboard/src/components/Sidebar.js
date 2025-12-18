@@ -224,6 +224,17 @@ const Sidebar = ({ isOpen, toggleSidebar, collapsed, toggleCollapse }) => {
                 {showLabels && <span>League Stats</span>}
               </NavLink>
 
+<NavLink
+  to="/clean-sheet"
+  title="Clean Sheet Possibilities"
+  className={({ isActive }) =>
+    `${linkBase} ${isActive ? linkActive : linkInactive}`
+  }
+>
+  <span>🧤</span>
+  {showLabels && <span>Clean Sheets Chances</span>}
+</NavLink>
+
               <NavLink
                 to="/tieanalyzer"
                 title="Tie Analyzer"
