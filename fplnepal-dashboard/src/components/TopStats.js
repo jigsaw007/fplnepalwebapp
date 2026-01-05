@@ -15,25 +15,30 @@ const TopStats = () => {
   }, []);
 
   // Helper: get top 1 player by stat type
-  const getTopPlayer = (key) => {
-    const sorted = [...players].sort((a, b) => b[key] - a[key]);
-    const p = sorted[0];
-    if (!p) return null;
+const getTopPlayer = (key, position = null) => {
+  let list = [...players];
 
-    return {
-      id: p.id,
-      name: p.web_name,
-      stat: p[key],
-      code: p.code,
-      team: p.team,
-      // ✅ Correct 2025 image URL pattern
-      image: `https://resources.premierleague.com/premierleague25/photos/players/110x140/${p.code}.png`,
-    };
+  if (position !== null) {
+    list = list.filter(p => p.element_type === position);
+  }
+
+  const p = list.sort((a, b) => b[key] - a[key])[0];
+  if (!p) return null;
+
+  return {
+    id: p.id,
+    name: p.web_name,
+    stat: p[key],
+    code: p.code,
+    team: p.team,
+    image: `https://resources.premierleague.com/premierleague25/photos/players/110x140/${p.code}.png`,
   };
+};
+
 
   const topScorer = getTopPlayer("goals_scored");
   const topAssist = getTopPlayer("assists");
-  const topCleanSheet = getTopPlayer("clean_sheets");
+const topCleanSheet = getTopPlayer("clean_sheets", 1);
 
   const sections = [
     {
