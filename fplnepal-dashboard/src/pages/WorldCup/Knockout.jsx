@@ -220,7 +220,7 @@ m.winner === m.home
                         )}
                       </div>
 
-                      {/* Team 2 Away */}
+                      {/* Team 2  */}
                       <div
                         className={`flex items-center gap-4 justify-end text-xl ${
                           m.winner === m.away
